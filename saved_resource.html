@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<!-- saved from url=(0012)about:srcdoc -->
+<html lang="es"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><!--<base href="about:srcdoc">--><base href=".">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#11233f">
+  <title>StockLab · Inventario y facturación</title>
+  <style>
+    :root {
+      --ink: #14233c;
+      --ink-2: #294264;
+      --muted: #5e6b7c;
+      --line: #e5ebf2;
+      --bg: #f5f8fb;
+      --card: #ffffff;
+      --teal: #16a598;
+      --teal-dark: #087a73;
+      --coral: #f47261;
+      --gold: #f3b63f;
+      --red: #d9545d;
+      --shadow: 0 16px 40px rgba(20, 35, 60, .08);
+      --radius: 20px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .app-shell { min-height: 100vh; display: flex; }
+    .sidebar {
+      width: 265px;
+      position: fixed;
+      inset: 0 auto 0 0;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      padding: 28px 18px 20px;
+      color: #fff;
+      background: var(--ink);
+      overflow-y: auto;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; padding: 0 12px 34px; }
+    .brand-mark {
+      width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px;
+      background: linear-gradient(135deg, var(--teal), #7fe1c5); color: var(--ink); font-weight: 900; font-size: 20px;
+      box-shadow: 0 8px 20px rgba(22, 165, 152, .3);
+    }
+    .brand strong { display: block; font-size: 17px; letter-spacing: -.02em; }
+    .brand small { color: #9caec7; font-size: 11px; display: block; margin-top: 2px; }
+    .nav-label { padding: 0 13px 9px; color: #93a3b8; text-transform: uppercase; letter-spacing: .14em; font-size: 10px; font-weight: 800; }
+    .nav { display: grid; gap: 5px; }
+    .nav button {
+      border: 0; background: transparent; color: #aebbd0; width: 100%; text-align: left; padding: 12px 13px;
+      border-radius: 12px; display: flex; align-items: center; gap: 12px; transition: .2s ease; font-weight: 700; font-size: 13px;
+    }
+    .nav button:hover { color: #fff; background: rgba(255,255,255,.08); }
+    .nav button.active { color: #fff; background: linear-gradient(90deg, rgba(22,165,152,.28), rgba(22,165,152,.08)); box-shadow: inset 3px 0 var(--teal); }
+    .nav-icon { width: 18px; text-align: center; font-size: 16px; }
+    .sidebar-bottom { margin-top: auto; padding: 18px 12px 0; }
+    .class-note { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1); border-radius: 15px; padding: 14px; }
+    .class-note p { color: #b5c1d1; font-size: 11px; margin: 8px 0 0; }
+    .class-note strong { font-size: 12px; }
+    .main { width: calc(100% - 265px); margin-left: 265px; }
+    .topbar { height: 78px; display: flex; align-items: center; justify-content: space-between; padding: 0 48px; background: rgba(245,248,251,.92); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; backdrop-filter: blur(10px); }
+    .crumb { color: var(--muted); font-size: 12px; }
+    .crumb strong { color: var(--ink); }
+    .top-actions { display: flex; align-items: center; gap: 13px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 5px rgba(22,165,152,.12); }
+    .offline-badge { display: flex; align-items: center; gap: 8px; color: var(--teal-dark); background: #e3f7f2; border-radius: 999px; padding: 8px 12px; font-size: 11px; font-weight: 800; }
+    .avatar { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 11px; font-weight: 800; background: #c9564d; }
+    .content { max-width: 1440px; margin: 0 auto; padding: 42px 48px 72px; }
+    .view { display: none; animation: fade .3s ease; }
+    .view.active { display: block; }
+    @keyframes fade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    .eyebrow { margin: 0 0 9px; color: var(--teal-dark); text-transform: uppercase; letter-spacing: .14em; font-weight: 850; font-size: 11px; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { max-width: 730px; margin-bottom: 14px; font-size: clamp(32px, 4vw, 56px); line-height: 1.02; letter-spacing: -.055em; }
+    h2 { margin-bottom: 8px; font-size: 25px; letter-spacing: -.035em; }
+    h3 { margin-bottom: 4px; font-size: 16px; letter-spacing: -.02em; }
+    .lede { max-width: 640px; color: var(--muted); font-size: 16px; }
+    .hero { position: relative; overflow: hidden; display: grid; grid-template-columns: 1.2fr .8fr; gap: 32px; align-items: center; padding: 38px 42px; color: #fff; border-radius: 26px; background: linear-gradient(122deg, #11233f 0%, #173d5e 62%, #0c706d 130%); box-shadow: 0 24px 50px rgba(20,35,60,.14); }
+    .hero:before, .hero:after { content: ""; position: absolute; border-radius: 50%; pointer-events: none; }
+    .hero:before { width: 330px; height: 330px; right: -110px; top: -170px; border: 42px solid rgba(127,225,197,.13); }
+    .hero:after { width: 230px; height: 230px; right: 120px; bottom: -180px; border: 34px solid rgba(244,114,97,.13); }
+    .hero-copy, .hero-stats { position: relative; z-index: 1; }
+    .hero .eyebrow { color: #82ddcb; }
+    .hero h1 { color: #fff; }
+    .hero .lede { color: #bfd0df; }
+    .hero-tag { display: inline-flex; gap: 7px; align-items: center; padding: 7px 10px; border: 1px solid rgba(255,255,255,.15); border-radius: 999px; color: #d7e8f2; font-size: 11px; font-weight: 750; margin-bottom: 20px; background: rgba(255,255,255,.06); }
+    .hero-tag b { color: #82ddcb; }
+    .hero-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .hero-right { position: relative; z-index: 1; display: grid; gap: 12px; }
+    .hero-visual { position: relative; min-height: 190px; overflow: hidden; border: 1px solid rgba(255,255,255,.14); border-radius: 19px; background: rgba(255,255,255,.08); }
+    .hero-visual img { display: block; width: 100%; height: 190px; object-fit: cover; }
+    .hero-visual-caption { position: absolute; left: 12px; right: 12px; bottom: 11px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border: 1px solid rgba(255,255,255,.16); border-radius: 10px; color: #e9f7f7; background: rgba(17,35,63,.72); backdrop-filter: blur(8px); font-size: 10px; font-weight: 800; }
+    .hero-visual-caption span { color: #82ddcb; }
+    .hero-stat { padding: 16px; min-height: 104px; border: 1px solid rgba(255,255,255,.13); border-radius: 16px; background: rgba(255,255,255,.08); }
+    .hero-stat span { display: block; color: #aec1d2; font-size: 11px; }
+    .hero-stat strong { display: block; margin: 8px 0 3px; font-size: 25px; letter-spacing: -.04em; }
+    .hero-stat small { color: #82ddcb; font-size: 10px; }
+    .section-head { display: flex; justify-content: space-between; gap: 20px; align-items: end; margin: 44px 0 17px; }
+    .section-head p { color: var(--muted); margin: 0; font-size: 13px; }
+    .btn { border: 0; border-radius: 11px; padding: 11px 15px; font-weight: 800; font-size: 12px; transition: .2s ease; }
+    .btn:hover { transform: translateY(-1px); filter: brightness(.98); }
+    .btn-primary { color: #fff; background: var(--teal-dark); box-shadow: 0 8px 16px rgba(8,122,115,.2); }
+    .btn-dark { color: #fff; background: var(--ink); }
+    .btn-ghost { color: var(--ink-2); border: 1px solid var(--line); background: #fff; }
+    .btn-danger { color: #a5363f; border: 1px solid #f2c7cb; background: #fff5f5; }
+    .btn-small { padding: 8px 10px; font-size: 11px; }
+    .dashboard-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .metric { display: flex; align-items: start; justify-content: space-between; gap: 12px; min-height: 122px; padding: 19px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 4px 14px rgba(20,35,60,.025); }
+    .metric-label { color: var(--muted); font-size: 12px; }
+    .metric-value { display: block; margin: 9px 0 5px; font-size: 28px; line-height: 1; letter-spacing: -.05em; }
+    .metric-note { color: var(--teal-dark); font-size: 10px; font-weight: 800; }
+    .metric-note.warning { color: #b37712; }
+    .metric-note.danger { color: var(--red); }
+    .metric-icon { width: 39px; height: 39px; display: grid; place-items: center; border-radius: 12px; font-size: 17px; background: #e8faf5; }
+    .metric:nth-child(2) .metric-icon { background: #fff1df; }
+    .metric:nth-child(3) .metric-icon { background: #eaf0ff; }
+    .metric:nth-child(4) .metric-icon { background: #fff0ef; }
+    .two-col { display: grid; grid-template-columns: 1.35fr .65fr; gap: 20px; align-items: start; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 4px 14px rgba(20,35,60,.025); }
+    .card-pad { padding: 22px; }
+    .card-title { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 19px; }
+    .card-title h3 { margin: 0; }
+    .card-title small { color: var(--muted); font-size: 11px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { text-align: left; padding: 0 11px 12px; border-bottom: 1px solid var(--line); color: #667589; font-weight: 800; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; white-space: nowrap; }
+    td { padding: 14px 11px; border-bottom: 1px solid #edf1f5; vertical-align: middle; white-space: nowrap; }
+    tbody tr:last-child td { border-bottom: 0; }
+    .product-cell { display: flex; align-items: center; gap: 10px; }
+    .product-icon { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; background: #edf7f6; font-size: 16px; }
+    .product-cell strong { display: block; font-size: 12px; }
+    .product-cell small { display: block; margin-top: 1px; color: var(--muted); font-size: 10px; }
+    .stock-number { font-weight: 850; }
+    .stock-track { width: 72px; height: 5px; margin-top: 5px; overflow: hidden; background: #edf1f5; border-radius: 99px; }
+    .stock-track span { display: block; height: 100%; border-radius: 99px; background: var(--teal); }
+    .stock-track span.warn { background: var(--gold); }
+    .stock-track span.low { background: var(--red); }
+    .badge { display: inline-flex; align-items: center; padding: 5px 8px; border-radius: 99px; font-size: 10px; font-weight: 850; }
+    .badge.ok { color: var(--teal-dark); background: #e4f7f2; }
+    .badge.warn { color: #9b6a10; background: #fff5d9; }
+    .badge.low { color: #ad3d48; background: #ffebed; }
+    .alert-card { border: 1px solid #f5dca1; background: #fffbef; }
+    .alert-intro { display: flex; gap: 12px; align-items: start; }
+    .alert-icon { flex: 0 0 auto; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; background: #fff0c2; }
+    .alert-card p { color: #856a35; font-size: 12px; margin: 0; }
+    .alert-list { display: grid; gap: 9px; margin-top: 17px; }
+    .alert-item { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding-top: 10px; border-top: 1px dashed #ead99e; font-size: 12px; }
+    .alert-item small { color: #a5823a; font-size: 10px; }
+    .empty { padding: 24px; text-align: center; color: var(--muted); font-size: 12px; }
+    .page-title { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 28px; }
+    .page-title h1 { margin: 0; font-size: clamp(30px, 4vw, 44px); }
+    .page-title .lede { margin: 8px 0 0; font-size: 14px; }
+    .form-card { padding: 22px; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+    .field { display: grid; gap: 7px; }
+    .field.full { grid-column: 1 / -1; }
+    label { color: var(--ink-2); font-size: 11px; font-weight: 850; }
+    input, select { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; outline: 0; color: var(--ink); background: #fbfcfd; font-size: 12px; }
+    input:focus, select:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(22,165,152,.1); }
+    .form-actions { display: flex; gap: 9px; margin-top: 19px; }
+    .tabs { display: flex; gap: 5px; border-bottom: 1px solid var(--line); margin-bottom: 22px; }
+    .tab { border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); padding: 10px 13px; font-size: 12px; font-weight: 800; }
+    .tab.active { color: var(--teal-dark); border-color: var(--teal); }
+    .inventory-layout { display: grid; grid-template-columns: .68fr 1.32fr; gap: 20px; align-items: start; }
+    .search-row { display: flex; gap: 9px; margin-bottom: 16px; }
+    .search-row input { flex: 1; }
+    .mini-list { display: grid; gap: 8px; }
+    .mini-list-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid #edf1f5; }
+    .mini-list-item:last-child { border-bottom: 0; }
+    .mini-list-item .left { display: flex; align-items: center; gap: 9px; }
+    .mini-list-item small { color: var(--muted); font-size: 10px; }
+    .radio-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .radio-card { position: relative; }
+    .radio-card input { position: absolute; opacity: 0; pointer-events: none; }
+    .radio-card label { display: block; text-align: center; padding: 11px 7px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; color: var(--muted); background: #fff; }
+    .radio-card input:checked + label { color: var(--teal-dark); border-color: var(--teal); background: #edfaf7; }
+    .sale-layout { display: grid; grid-template-columns: 1fr .85fr; gap: 20px; align-items: start; }
+    .sale-product { display: grid; grid-template-columns: 1fr 120px auto; gap: 10px; align-items: end; }
+    .sale-product .field { min-width: 0; }
+    .cart-table td { padding: 12px 7px; }
+    .cart-table th { padding-left: 7px; padding-right: 7px; }
+    .qty-control { display: inline-flex; align-items: center; gap: 7px; }
+    .qty-control button { border: 1px solid var(--line); width: 24px; height: 24px; padding: 0; border-radius: 7px; background: #fff; color: var(--ink-2); }
+    .qty-control span { min-width: 12px; text-align: center; font-size: 11px; font-weight: 800; }
+    .remove-btn { border: 0; color: var(--red); background: transparent; font-size: 17px; padding: 3px; }
+    .bill-total { border-top: 1px solid var(--line); margin-top: 15px; padding-top: 14px; display: grid; gap: 8px; }
+    .total-line { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; }
+    .total-line strong { color: var(--ink); }
+    .total-line.grand { margin-top: 4px; color: var(--ink); font-size: 17px; font-weight: 850; }
+    .total-line.grand strong { color: var(--teal-dark); font-size: 21px; }
+    .ticket-preview { position: sticky; top: 100px; }
+    .ticket-paper { padding: 24px 20px; background: #fff; border: 1px dashed #cbd6e3; border-radius: 12px; box-shadow: 0 8px 25px rgba(20,35,60,.06); font-family: "Courier New", monospace; }
+    .ticket-head { text-align: center; border-bottom: 1px dashed #aebdcb; padding-bottom: 13px; margin-bottom: 13px; }
+    .ticket-head strong { display: block; font-size: 16px; letter-spacing: .04em; }
+    .ticket-head small { display: block; color: #718195; font-size: 10px; margin-top: 4px; }
+    .ticket-meta { display: flex; justify-content: space-between; color: #718195; font-size: 10px; margin-bottom: 12px; }
+    .ticket-items { display: grid; gap: 8px; min-height: 60px; }
+    .ticket-item { display: grid; grid-template-columns: 1fr auto; gap: 5px; font-size: 11px; }
+    .ticket-item small { grid-column: 1; color: #718195; font-size: 9px; }
+    .ticket-item strong { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+    .ticket-summary { border-top: 1px dashed #aebdcb; margin-top: 14px; padding-top: 12px; display: grid; gap: 6px; font-size: 11px; }
+    .ticket-summary div { display: flex; justify-content: space-between; }
+    .ticket-summary .final { padding-top: 6px; font-size: 14px; font-weight: 900; }
+    .ticket-foot { text-align: center; color: #718195; font-size: 9px; margin-top: 16px; }
+    .req-hero { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 26px; padding: 29px; border-radius: 22px; background: #e7f5f3; }
+    .req-hero p { color: #53736f; font-size: 13px; margin-bottom: 0; }
+    .diagram { display: flex; align-items: center; justify-content: center; gap: 7px; }
+    .diagram-node { width: 88px; height: 88px; display: grid; place-items: center; text-align: center; padding: 8px; border-radius: 50%; background: #fff; border: 7px solid rgba(22,165,152,.16); color: var(--teal-dark); font-weight: 850; font-size: 10px; }
+    .diagram-node:nth-child(3) { border-color: rgba(244,114,97,.22); color: #bb4f43; }
+    .diagram-arrow { color: #75bdb5; font-weight: 900; }
+    .req-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 20px; }
+    .req-card { display: flex; align-items: start; gap: 13px; padding: 20px; }
+    .req-card .req-number { flex: 0 0 auto; display: grid; place-items: center; width: 31px; height: 31px; border-radius: 10px; color: var(--teal-dark); background: #e3f7f2; font-weight: 900; font-size: 12px; }
+    .req-card p { color: var(--muted); margin: 7px 0 0; font-size: 12px; }
+    .stack { display: grid; gap: 20px; }
+    .note { padding: 14px; color: #69778a; background: #f8fafc; border: 1px solid var(--line); border-radius: 12px; font-size: 11px; }
+    .toast { position: fixed; z-index: 30; right: 25px; bottom: 25px; max-width: 300px; color: #fff; background: var(--ink); border-left: 4px solid var(--teal); box-shadow: 0 16px 35px rgba(20,35,60,.25); border-radius: 10px; padding: 13px 15px; transform: translateY(20px); opacity: 0; pointer-events: none; transition: .25s ease; font-size: 12px; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .modal-backdrop { position: fixed; inset: 0; z-index: 25; display: none; place-items: center; padding: 20px; background: rgba(12,26,46,.56); }
+    .modal-backdrop.open { display: grid; }
+    .modal { position: relative; width: min(460px, 100%); max-height: 90vh; overflow-y: auto; padding: 24px; background: #fff; border-radius: 18px; box-shadow: 0 24px 70px rgba(0,0,0,.25); }
+    .modal-close { position: absolute; top: 13px; right: 14px; border: 0; color: var(--muted); background: transparent; font-size: 22px; }
+    .modal h2 { padding-right: 24px; }
+    .modal p { color: var(--muted); font-size: 12px; }
+    .modal-actions { display: flex; justify-content: end; gap: 9px; margin-top: 19px; }
+    .footer { display: flex; justify-content: space-between; gap: 15px; color: #8491a0; padding-top: 32px; font-size: 10px; }
+    .mobile-menu { display: none; border: 0; background: transparent; color: var(--ink); font-size: 21px; }
+    @media (max-width: 1050px) {
+      .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+      .two-col, .inventory-layout, .sale-layout { grid-template-columns: 1fr; }
+      .ticket-preview { position: static; }
+    }
+    @media (max-width: 760px) {
+      .sidebar { width: 100%; height: auto; position: relative; padding: 13px 14px; }
+      .app-shell { display: block; }
+      .brand { padding: 0; }
+      .sidebar-bottom, .nav-label { display: none; }
+      .nav { display: flex; gap: 4px; margin-top: 12px; overflow-x: auto; }
+      .nav button { width: auto; white-space: nowrap; padding: 9px 11px; }
+      .nav button.active { box-shadow: inset 0 -3px var(--teal); }
+      .main { width: 100%; margin-left: 0; }
+      .topbar { height: 57px; padding: 0 17px; }
+      .topbar .crumb { display: none; }
+      .top-actions { margin-left: auto; }
+      .content { padding: 24px 17px 45px; }
+      .hero { grid-template-columns: 1fr; padding: 27px 23px; }
+      .hero h1 { font-size: 37px; }
+      .hero-stats { grid-template-columns: repeat(2, 1fr); }
+      .section-head, .page-title { align-items: start; flex-direction: column; margin-top: 31px; }
+      .dashboard-grid { grid-template-columns: repeat(2, 1fr); gap: 9px; }
+      .metric { min-height: 111px; padding: 14px; }
+      .metric-value { font-size: 23px; }
+      .metric-icon { width: 32px; height: 32px; font-size: 14px; }
+      .form-grid, .req-grid { grid-template-columns: 1fr; }
+      .field.full { grid-column: auto; }
+      .sale-product { grid-template-columns: 1fr 90px auto; }
+      .req-hero { grid-template-columns: 1fr; padding: 22px; }
+      .diagram-node { width: 76px; height: 76px; }
+      .footer { flex-direction: column; }
+    }
+    @media print {
+      body { background: #fff; }
+      .sidebar, .topbar, .page-title, .sale-layout > :first-child, .footer, .toast, .modal-backdrop { display: none !important; }
+      .main { width: 100%; margin: 0; }
+      .content { padding: 0; }
+      .view { display: none !important; }
+      #view-sales { display: block !important; }
+      .ticket-preview { box-shadow: none; }
+      .ticket-paper { width: 80mm; margin: 0 auto; border: 0; box-shadow: none; }
+      .card { border: 0; box-shadow: none; }
+      .ticket-preview .card-title { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">S</div>
+        <div><strong>StockLab</strong><small>Inventario &amp; facturación</small></div>
+      </div>
+      <div class="nav-label">Módulos</div>
+      <nav class="nav" aria-label="Navegación principal">
+        <button class="" data-view="home"><span class="nav-icon">⌂</span>Resumen</button>
+        <button data-view="inventory" class="active"><span class="nav-icon">▦</span>Inventario</button>
+        <button data-view="sales"><span class="nav-icon">▤</span>Facturación</button>
+        <button data-view="requirements"><span class="nav-icon">✓</span>Requisitos</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="class-note">
+          <strong>PROYECTO · GRUPO 3</strong>
+          <p>Redes · Programación · Diseño web</p>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="crumb">Proyecto escolar / <strong id="crumb-label">Control de inventario</strong></div>
+        <div class="top-actions">
+          <div class="offline-badge"><span class="status-dot"></span>Modo sin internet</div>
+          <div class="avatar">G3</div>
+        </div>
+      </header>
+
+      <div class="content">
+        <section class="view" id="view-home">
+          <div class="hero">
+            <div class="hero-copy">
+              <div class="hero-tag"><b>●</b> DEMO FUNCIONAL · PRESENTACIÓN EN CLASE</div>
+              <p class="eyebrow">Programación + diseño web</p>
+              <h1>Controla tu inventario sin perder una venta.</h1>
+              <p class="lede">Una solución sencilla para registrar entradas y salidas, detectar productos con poco stock y emitir un ticket con el total y sus impuestos.</p>
+              <button class="btn btn-primary" data-go="inventory">Explorar inventario →</button>
+            </div>
+            <div class="hero-right">
+              <div class="hero-visual">
+                <img src="" alt="Ilustración de un panel de inventario con productos y un ticket">
+                <div class="hero-visual-caption"><span>✦ Vista del sistema</span><b>Listo para presentar</b></div>
+              </div>
+              <div class="hero-stats">
+              <div class="hero-stat"><span>Productos registrados</span><strong id="hero-products">6</strong><small>catálogo activo</small></div>
+              <div class="hero-stat"><span>Unidades en stock</span><strong id="hero-units">72</strong><small>disponibles ahora</small></div>
+                <div class="hero-stat"><span>Alertas activas</span><strong id="hero-alerts">2</strong><small>revisar pronto</small></div>
+                <div class="hero-stat"><span>Impuesto aplicado</span><strong>15%</strong><small>configuración de ejemplo</small></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-head">
+            <div><p class="eyebrow">Vista rápida</p><h2>Estado del sistema</h2></div>
+            <p>Los datos se guardan en este navegador.</p>
+          </div>
+          <div class="dashboard-grid">
+            <div class="metric"><div><span class="metric-label">Valor del inventario</span><strong class="metric-value" id="metric-value">L 7,850.00</strong><span class="metric-note">precio de venta estimado</span></div><div class="metric-icon">◈</div></div>
+            <div class="metric"><div><span class="metric-label">Movimientos hoy</span><strong class="metric-value" id="metric-moves">0</strong><span class="metric-note">entradas y salidas</span></div><div class="metric-icon">↕</div></div>
+            <div class="metric"><div><span class="metric-label">Unidades disponibles</span><strong class="metric-value" id="metric-units">72</strong><span class="metric-note">en todos los productos</span></div><div class="metric-icon">▤</div></div>
+            <div class="metric"><div><span class="metric-label">Productos por reponer</span><strong class="metric-value danger" id="metric-low">2</strong><span class="metric-note warning">bajo el mínimo</span></div><div class="metric-icon">!</div></div>
+          </div>
+
+          <div class="section-head"><div><p class="eyebrow">Control del stock</p><h2>Inventario reciente</h2></div><button class="btn btn-ghost" data-go="inventory">Ver inventario completo</button></div>
+          <div class="two-col">
+            <div class="card card-pad"><div class="card-title"><h3>Productos con movimiento</h3><small id="recent-count">6 productos</small></div><div class="table-wrap"><table><thead><tr><th>Producto</th><th>Stock actual</th><th>Estado</th><th>Precio</th></tr></thead><tbody id="home-table"><tr><td><div class="product-cell"><div class="product-icon">▰</div><div><strong>Memoria USB 32 GB</strong><small>Tecnología</small></div></div></td><td><span class="stock-number">5 <small style="color:var(--muted);font-weight:500">/ 6 mín.</small></span><div class="stock-track"><span class="low" style="width:41.66666666666667%"></span></div></td><td><span class="badge low">Bajo stock</span></td><td>L 185.00</td></tr><tr><td><div class="product-cell"><div class="product-icon">♬</div><div><strong>Audífonos básicos</strong><small>Tecnología</small></div></div></td><td><span class="stock-number">3 <small style="color:var(--muted);font-weight:500">/ 5 mín.</small></span><div class="stock-track"><span class="low" style="width:30%"></span></div></td><td><span class="badge low">Bajo stock</span></td><td>L 160.00</td></tr><tr><td><div class="product-cell"><div class="product-icon">▤</div><div><strong>Cuaderno universitario</strong><small>Papelería</small></div></div></td><td><span class="stock-number">24 <small style="color:var(--muted);font-weight:500">/ 8 mín.</small></span><div class="stock-track"><span class="" style="width:100%"></span></div></td><td><span class="badge ok">Saludable</span></td><td>L 42.50</td></tr><tr><td><div class="product-cell"><div class="product-icon">◉</div><div><strong>Mouse inalámbrico</strong><small>Tecnología</small></div></div></td><td><span class="stock-number">13 <small style="color:var(--muted);font-weight:500">/ 5 mín.</small></span><div class="stock-track"><span class="" style="width:100%"></span></div></td><td><span class="badge ok">Saludable</span></td><td>L 220.00</td></tr><tr><td><div class="product-cell"><div class="product-icon">✎</div><div><strong>Marcadores x12</strong><small>Papelería</small></div></div></td><td><span class="stock-number">18 <small style="color:var(--muted);font-weight:500">/ 6 mín.</small></span><div class="stock-track"><span class="" style="width:100%"></span></div></td><td><span class="badge ok">Saludable</span></td><td>L 75.00</td></tr></tbody></table></div></div>
+            <div class="card card-pad alert-card"><div class="alert-intro"><div class="alert-icon">⚠</div><div><h3>Alerta de bajo inventario</h3><p>Revisa estos productos antes de que se agoten.</p></div></div><div class="alert-list" id="home-alerts"><div class="alert-item"><div><strong>Memoria USB 32 GB</strong><small style="display:block">Quedan 5 · mínimo 6</small></div><span class="badge low">Reponer</span></div><div class="alert-item"><div><strong>Audífonos básicos</strong><small style="display:block">Quedan 3 · mínimo 5</small></div><span class="badge low">Reponer</span></div></div></div>
+          </div>
+        </section>
+
+        <section class="view active" id="view-inventory">
+          <div class="page-title"><div><p class="eyebrow">Módulo 01 · control de stock</p><h1>Inventario</h1><p class="lede">Registra entradas y salidas para mantener las existencias actualizadas.</p></div><button class="btn btn-primary" id="open-add-product">＋ Nuevo producto</button></div>
+          <div class="inventory-layout">
+            <div class="stack">
+              <div class="card form-card"><div class="card-title"><div><h3>Registrar movimiento</h3><small>Actualiza las unidades disponibles</small></div><span class="badge ok">En vivo</span></div>
+                <form id="movement-form">
+                  <div class="field"><label>Producto</label><select id="movement-product" required=""><option value="1">Cuaderno universitario · 24 disp.</option><option value="2">Memoria USB 32 GB · 5 disp.</option><option value="3">Mouse inalámbrico · 13 disp.</option><option value="4">Audífonos básicos · 3 disp.</option><option value="5">Marcadores x12 · 18 disp.</option><option value="6">Botella reutilizable · 9 disp.</option></select></div>
+                  <div class="field" style="margin-top:14px"><label>Tipo de movimiento</label><div class="radio-row"><div class="radio-card"><input type="radio" id="entry" name="movement-type" value="entry" checked=""><label for="entry">＋ Entrada</label></div><div class="radio-card"><input type="radio" id="exit" name="movement-type" value="exit"><label for="exit">− Salida</label></div></div></div>
+                  <div class="field" style="margin-top:14px"><label for="movement-qty">Cantidad de unidades</label><input id="movement-qty" type="number" min="1" step="1" value="1" required=""></div>
+                  <div class="field" style="margin-top:14px"><label for="movement-note">Nota (opcional)</label><input id="movement-note" type="text" maxlength="60" placeholder="Ej. compra a proveedor"></div>
+                  <div class="form-actions"><button class="btn btn-primary" type="submit">Guardar movimiento</button><button class="btn btn-ghost" type="reset">Limpiar</button></div>
+                </form>
+              </div>
+              <div class="card card-pad"><div class="card-title"><h3>Últimos movimientos</h3><small id="movement-count">0 registrados</small></div><div class="mini-list" id="movement-list"><div class="empty">Todavía no hay movimientos. Registra una entrada o salida.</div></div></div>
+            </div>
+            <div class="card card-pad"><div class="card-title"><div><h3>Catálogo de productos</h3><small>Consulta, busca y revisa el estado</small></div><span class="badge ok" id="inventory-count">6 de 6</span></div><div class="search-row"><input id="inventory-search" type="search" placeholder="Buscar producto o categoría…"><select id="inventory-filter" style="max-width:140px"><option value="all">Todos</option><option value="low">Bajo stock</option><option value="ok">Stock saludable</option></select></div><div class="table-wrap"><table><thead><tr><th>Producto</th><th>Stock / mínimo</th><th>Estado</th><th>Precio unit.</th><th>Acción</th></tr></thead><tbody id="inventory-table"><tr><td><div class="product-cell"><div class="product-icon">▤</div><div><strong>Cuaderno universitario</strong><small>Papelería</small></div></div></td><td><span class="stock-number">24 <small style="color:var(--muted);font-weight:500">/ 8 mín.</small></span><div class="stock-track"><span class="" style="width:100%"></span></div></td><td><span class="badge ok">Saludable</span></td><td>L 42.50</td><td><button class="btn btn-ghost btn-small" data-adjust="1">Ajustar</button></td></tr><tr><td><div class="product-cell"><div class="product-icon">▰</div><div><strong>Memoria USB 32 GB</strong><small>Tecnología</small></div></div></td><td><span class="stock-number">5 <small style="color:var(--muted);font-weight:500">/ 6 mín.</small></span><div class="stock-track"><span class="low" style="width:41.66666666666667%"></span></div></td><td><span class="badge low">Bajo stock</span></td><td>L 185.00</td><td><button class="btn btn-ghost btn-small" data-adjust="2">Ajustar</button></td></tr><tr><td><div class="product-cell"><div class="product-icon">◉</div><div><strong>Mouse inalámbrico</strong><small>Tecnología</small></div></div></td><td><span class="stock-number">13 <small style="color:var(--muted);font-weight:500">/ 5 mín.</small></span><div class="stock-track"><span class="" style="width:100%"></span></div></td><td><span class="badge ok">Saludable</span></td><td>L 220.00</td><td><button class="btn btn-ghost btn-small" data-adjust="3">Ajustar</button></td></tr><tr><td><div class="product-cell"><div class="product-icon">♬</div><div><strong>Audífonos básicos</strong><small>Tecnología</small></div></div></td><td><span class="stock-number">3 <small style="color:var(--muted);font-weight:500">/ 5 mín.</small></span><div class="stock-track"><span class="low" style="width:30%"></span></div></td><td><span class="badge low">Bajo stock</span></td><td>L 160.00</td><td><button class="btn btn-ghost btn-small" data-adjust="4">Ajustar</button></td></tr><tr><td><div class="product-cell"><div class="product-icon">✎</div><div><strong>Marcadores x12</strong><small>Papelería</small></div></div></td><td><span class="stock-number">18 <small style="color:var(--muted);font-weight:500">/ 6 mín.</small></span><div class="stock-track"><span class="" style="width:100%"></span></div></td><td><span class="badge ok">Saludable</span></td><td>L 75.00</td><td><button class="btn btn-ghost btn-small" data-adjust="5">Ajustar</button></td></tr><tr><td><div class="product-cell"><div class="product-icon">◒</div><div><strong>Botella reutilizable</strong><small>Accesorios</small></div></div></td><td><span class="stock-number">9 <small style="color:var(--muted);font-weight:500">/ 4 mín.</small></span><div class="stock-track"><span class="" style="width:100%"></span></div></td><td><span class="badge ok">Saludable</span></td><td>L 135.00</td><td><button class="btn btn-ghost btn-small" data-adjust="6">Ajustar</button></td></tr></tbody></table></div></div>
+          </div>
+        </section>
+
+        <section class="view" id="view-sales">
+          <div class="page-title"><div><p class="eyebrow">Módulo 02 · generación de ticket</p><h1>Facturación</h1><p class="lede">Agrega productos a la venta, calcula el impuesto y genera un comprobante listo para presentar.</p></div><button class="btn btn-dark" id="print-ticket">▣ Imprimir ticket</button></div>
+          <div class="sale-layout">
+            <div class="card card-pad">
+              <div class="card-title"><div><h3>Nueva venta</h3><small>El stock se descuenta al confirmar</small></div><span class="badge ok">Ticket #<span id="ticket-number">0001</span></span></div>
+              <div class="sale-product">
+                <div class="field"><label for="sale-product">Producto</label><select id="sale-product"><option value="1">Cuaderno universitario · 24 disp.</option><option value="2">Memoria USB 32 GB · 5 disp.</option><option value="3">Mouse inalámbrico · 13 disp.</option><option value="4">Audífonos básicos · 3 disp.</option><option value="5">Marcadores x12 · 18 disp.</option><option value="6">Botella reutilizable · 9 disp.</option></select></div>
+                <div class="field"><label for="sale-qty">Cantidad</label><input id="sale-qty" type="number" min="1" value="1"></div>
+                <button class="btn btn-primary" id="add-to-cart" type="button">Agregar</button>
+              </div>
+              <div class="table-wrap" style="margin-top:24px"><table class="cart-table"><thead><tr><th>Detalle</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th></tr></thead><tbody id="cart-table"><tr><td colspan="5"><div class="empty">El carrito está vacío. Agrega un producto para comenzar.</div></td></tr></tbody></table></div>
+              <div class="bill-total"><div class="total-line"><span>Subtotal</span><strong id="subtotal">L 0.00</strong></div><div class="total-line"><span>Impuesto (15%)</span><strong id="tax">L 0.00</strong></div><div class="total-line grand"><span>Total a pagar</span><strong id="grand-total">L 0.00</strong></div></div>
+              <div class="form-actions"><button class="btn btn-primary" id="complete-sale" type="button">Confirmar venta</button><button class="btn btn-ghost" id="clear-cart" type="button">Vaciar</button></div>
+            </div>
+            <div class="card card-pad ticket-preview"><div class="card-title"><div><h3>Vista previa del ticket</h3><small>Se actualiza automáticamente</small></div><span style="font-size:18px">✦</span></div>
+              <div class="ticket-paper" id="ticket-paper"><div class="ticket-head"><strong>STOCKLAB</strong><small>INVENTARIO &amp; FACTURACIÓN</small><small>Comprobante de venta</small></div><div class="ticket-meta"><span id="ticket-date">09/10/2026</span><span id="ticket-meta-number">#0001</span></div><div class="ticket-items" id="ticket-items"><div class="empty">Agrega productos para ver el ticket.</div></div><div class="ticket-summary"><div><span>Subtotal</span><span id="ticket-subtotal">L 0.00</span></div><div><span>Impuesto 15%</span><span id="ticket-tax">L 0.00</span></div><div class="final"><span>TOTAL</span><span id="ticket-grand">L 0.00</span></div></div><div class="ticket-foot">Gracias por tu compra · Proyecto Grupo 3</div></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-requirements">
+          <div class="page-title"><div><p class="eyebrow">Módulo 03 · propuesta de clase</p><h1>Requisitos del proyecto</h1><p class="lede">La página reúne los puntos escritos en la hoja y los convierte en una demostración navegable.</p></div></div>
+          <div class="req-hero"><div><p class="eyebrow">Flujo principal</p><h2>De la entrada de producto al ticket.</h2><p>El sistema conecta el inventario con la facturación: cada movimiento modifica el stock y cada venta puede generar un comprobante.</p></div><div class="diagram"><div class="diagram-node">Entrada<br>y salida</div><span class="diagram-arrow">→</span><div class="diagram-node">Stock<br>actualizado</div><span class="diagram-arrow">→</span><div class="diagram-node">Ticket<br>con impuesto</div></div></div>
+          <div class="req-grid"><div class="card req-card"><div class="req-number">01</div><div><h3>Control del stock de productos</h3><p>Consulta las existencias, el mínimo recomendado y el valor estimado del catálogo.</p></div></div><div class="card req-card"><div class="req-number">02</div><div><h3>Entrada y salida de inventario</h3><p>Registra unidades que ingresan o salen y conserva un historial de movimientos.</p></div></div><div class="card req-card"><div class="req-number">03</div><div><h3>Alerta de bajo inventario</h3><p>Identifica productos que están en el mínimo o por debajo para facilitar la reposición.</p></div></div><div class="card req-card"><div class="req-number">04</div><div><h3>Ticket de venta</h3><p>Agrega productos al carrito y genera una vista previa del comprobante de venta.</p></div></div><div class="card req-card"><div class="req-number">05</div><div><h3>Total con impuestos</h3><p>Calcula automáticamente subtotal, impuesto del 15% y total final a pagar.</p></div></div><div class="card req-card"><div class="req-number">06</div><div><h3>Trabajo offline</h3><p>La demo funciona desde un archivo local, ideal para llevarla en una USB y presentarla en clase.</p></div></div></div>
+          <div class="card card-pad" style="margin-top:20px"><div class="card-title"><h3>Datos de presentación</h3><span class="badge ok">Grupo 3</span></div><div class="note"><strong>Área:</strong> Redes · Programación · Diseño web &nbsp; / &nbsp; <strong>Proyecto:</strong> Sistema de inventario y facturación &nbsp; / &nbsp; <strong>Formato:</strong> página web offline</div></div>
+        </section>
+
+        <div class="footer"><span>StockLab · Proyecto escolar Grupo 3</span><span>Todos los datos de demostración se almacenan localmente en el navegador.</span></div>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal"><button class="modal-close" id="close-modal" aria-label="Cerrar">×</button><h2 id="modal-title">Nuevo producto</h2><p>Agrega un producto al catálogo para usarlo en inventario y facturación.</p><form id="product-form"><div class="form-grid"><div class="field full"><label for="new-name">Nombre del producto</label><input id="new-name" required="" placeholder="Ej. Cuaderno profesional"></div><div class="field"><label for="new-category">Categoría</label><input id="new-category" required="" placeholder="Ej. Papelería"></div><div class="field"><label for="new-icon">Ícono</label><input id="new-icon" maxlength="2" value="✦" placeholder="✦"></div><div class="field"><label for="new-stock">Stock inicial</label><input id="new-stock" type="number" min="0" value="0" required=""></div><div class="field"><label for="new-min">Stock mínimo</label><input id="new-min" type="number" min="0" value="5" required=""></div><div class="field full"><label for="new-price">Precio unitario (L)</label><input id="new-price" type="number" min="0" step="0.01" value="10" required=""></div></div><div class="modal-actions"><button class="btn btn-ghost" type="button" id="cancel-modal">Cancelar</button><button class="btn btn-primary" type="submit">Agregar producto</button></div></form></div>
+  </div>
+
+  <script>
+    (() => {
+      const TAX_RATE = 0.15;
+      const STORAGE_KEY = 'stocklab-demo-v1';
+      const seedProducts = [
+        { id: 1, name: 'Cuaderno universitario', category: 'Papelería', icon: '▤', stock: 24, min: 8, price: 42.5 },
+        { id: 2, name: 'Memoria USB 32 GB', category: 'Tecnología', icon: '▰', stock: 5, min: 6, price: 185 },
+        { id: 3, name: 'Mouse inalámbrico', category: 'Tecnología', icon: '◉', stock: 13, min: 5, price: 220 },
+        { id: 4, name: 'Audífonos básicos', category: 'Tecnología', icon: '♬', stock: 3, min: 5, price: 160 },
+        { id: 5, name: 'Marcadores x12', category: 'Papelería', icon: '✎', stock: 18, min: 6, price: 75 },
+        { id: 6, name: 'Botella reutilizable', category: 'Accesorios', icon: '◒', stock: 9, min: 4, price: 135 }
+      ];
+      let state = loadState();
+      let activeView = 'home';
+      let toastTimer;
+
+      function loadState() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+          if (saved && Array.isArray(saved.products)) return { products: saved.products, movements: saved.movements || [], cart: [] };
+        } catch (error) { /* file:// may restrict storage; demo still works in memory */ }
+        return { products: seedProducts.map(p => ({ ...p })), movements: [], cart: [] };
+      }
+      function saveState() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ products: state.products, movements: state.movements })); } catch (error) { /* graceful fallback */ }
+      }
+      function money(value) { return 'L ' + Number(value || 0).toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+      function whole(value) { return Number(value || 0).toLocaleString('es-HN'); }
+      function product(id) { return state.products.find(p => p.id === Number(id)); }
+      function lowProducts() { return state.products.filter(p => p.stock <= p.min); }
+      function statusOf(p) { return p.stock <= p.min ? 'low' : p.stock <= p.min + 3 ? 'warn' : 'ok'; }
+      function statusLabel(status) { return status === 'low' ? 'Bajo stock' : status === 'warn' ? 'Por revisar' : 'Saludable'; }
+      function stockPercent(p) { return Math.min(100, Math.max(4, (p.stock / Math.max(p.min * 2, 1)) * 100)); }
+      function today() { return new Date().toLocaleDateString('es-HN', { day: '2-digit', month: '2-digit', year: 'numeric' }); }
+      function showToast(message) { const el = document.getElementById('toast'); el.textContent = message; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2800); }
+
+      function renderAll() {
+        renderMetrics(); renderHomeTable(); renderAlerts(); renderProductSelects(); renderInventory(); renderMovements(); renderCart(); renderTicket();
+      }
+      function renderMetrics() {
+        const units = state.products.reduce((sum, p) => sum + p.stock, 0);
+        const value = state.products.reduce((sum, p) => sum + p.stock * p.price, 0);
+        const low = lowProducts().length;
+        document.getElementById('hero-products').textContent = whole(state.products.length);
+        document.getElementById('hero-units').textContent = whole(units);
+        document.getElementById('hero-alerts').textContent = whole(low);
+        document.getElementById('metric-value').textContent = money(value);
+        document.getElementById('metric-moves').textContent = whole(state.movements.length);
+        document.getElementById('metric-units').textContent = whole(units);
+        document.getElementById('metric-low').textContent = whole(low);
+        document.getElementById('metric-low').className = 'metric-value' + (low ? ' danger' : '');
+      }
+      function productRow(p, actions = false) {
+        const status = statusOf(p);
+        return `<tr><td><div class="product-cell"><div class="product-icon">${p.icon || '✦'}</div><div><strong>${escapeHtml(p.name)}</strong><small>${escapeHtml(p.category)}</small></div></div></td><td><span class="stock-number">${whole(p.stock)} <small style="color:var(--muted);font-weight:500">/ ${whole(p.min)} mín.</small></span><div class="stock-track"><span class="${status === 'low' ? 'low' : status === 'warn' ? 'warn' : ''}" style="width:${stockPercent(p)}%"></span></div></td><td><span class="badge ${status}">${statusLabel(status)}</span></td><td>${money(p.price)}</td>${actions ? `<td><button class="btn btn-ghost btn-small" data-adjust="${p.id}">Ajustar</button></td>` : ''}</tr>`;
+      }
+      function renderHomeTable() {
+        const rows = [...state.products].sort((a, b) => statusOf(a).localeCompare(statusOf(b))).slice(0, 5).map(p => productRow(p)).join('');
+        document.getElementById('home-table').innerHTML = rows || '<tr><td colspan="4"><div class="empty">No hay productos todavía.</div></td></tr>';
+        document.getElementById('recent-count').textContent = `${state.products.length} productos`;
+      }
+      function renderAlerts() {
+        const low = lowProducts();
+        const html = low.length ? low.slice(0, 5).map(p => `<div class="alert-item"><div><strong>${escapeHtml(p.name)}</strong><small style="display:block">Quedan ${whole(p.stock)} · mínimo ${whole(p.min)}</small></div><span class="badge low">Reponer</span></div>`).join('') : '<div class="empty">✓ Todo el inventario está sobre el mínimo.</div>';
+        document.getElementById('home-alerts').innerHTML = html;
+      }
+      function renderProductSelects() {
+        const movement = document.getElementById('movement-product');
+        const sale = document.getElementById('sale-product');
+        const previousMovement = movement.value; const previousSale = sale.value;
+        const options = state.products.map(p => `<option value="${p.id}">${escapeHtml(p.name)} · ${whole(p.stock)} disp.</option>`).join('');
+        movement.innerHTML = options || '<option value="">No hay productos</option>';
+        sale.innerHTML = options || '<option value="">No hay productos</option>';
+        if (product(previousMovement)) movement.value = previousMovement;
+        if (product(previousSale)) sale.value = previousSale;
+      }
+      function renderInventory() {
+        const query = document.getElementById('inventory-search').value.trim().toLowerCase();
+        const filter = document.getElementById('inventory-filter').value;
+        const filtered = state.products.filter(p => {
+          const matchText = !query || `${p.name} ${p.category}`.toLowerCase().includes(query);
+          const matchFilter = filter === 'all' || (filter === 'low' ? p.stock <= p.min : p.stock > p.min);
+          return matchText && matchFilter;
+        });
+        document.getElementById('inventory-table').innerHTML = filtered.length ? filtered.map(p => productRow(p, true)).join('') : '<tr><td colspan="5"><div class="empty">No se encontraron productos.</div></td></tr>';
+        document.getElementById('inventory-count').textContent = `${filtered.length} de ${state.products.length}`;
+      }
+      function renderMovements() {
+        const items = state.movements.slice(0, 6);
+        document.getElementById('movement-count').textContent = `${state.movements.length} registrados`;
+        document.getElementById('movement-list').innerHTML = items.length ? items.map(m => `<div class="mini-list-item"><div class="left"><div class="product-icon" style="background:${m.type === 'entry' ? '#e8faf5' : '#fff0ef'};color:${m.type === 'entry' ? 'var(--teal-dark)' : 'var(--red)'}">${m.type === 'entry' ? '＋' : '−'}</div><div><strong>${escapeHtml(m.name)}</strong><small style="display:block">${escapeHtml(m.note || (m.type === 'entry' ? 'Entrada de inventario' : 'Salida de inventario'))}</small></div></div><div style="text-align:right"><strong style="color:${m.type === 'entry' ? 'var(--teal-dark)' : 'var(--red)'}">${m.type === 'entry' ? '+' : '−'}${whole(m.qty)}</strong><small style="display:block">${m.date}</small></div></div>`).join('') : '<div class="empty">Todavía no hay movimientos. Registra una entrada o salida.</div>';
+      }
+      function cartTotals() {
+        const subtotal = state.cart.reduce((sum, item) => sum + item.qty * item.price, 0);
+        return { subtotal, tax: subtotal * TAX_RATE, total: subtotal * (1 + TAX_RATE) };
+      }
+      function renderCart() {
+        const cartBody = document.getElementById('cart-table');
+        if (!state.cart.length) cartBody.innerHTML = '<tr><td colspan="5"><div class="empty">El carrito está vacío. Agrega un producto para comenzar.</div></td></tr>';
+        else cartBody.innerHTML = state.cart.map(item => `<tr><td><strong>${escapeHtml(item.name)}</strong><small style="display:block;color:var(--muted);font-size:10px">${escapeHtml(item.category)}</small></td><td><div class="qty-control"><button type="button" data-cart-minus="${item.id}">−</button><span>${item.qty}</span><button type="button" data-cart-plus="${item.id}">＋</button></div></td><td>${money(item.price)}</td><td><strong>${money(item.qty * item.price)}</strong></td><td><button class="remove-btn" type="button" data-cart-remove="${item.id}" aria-label="Eliminar">×</button></td></tr>`).join('');
+        const totals = cartTotals();
+        document.getElementById('subtotal').textContent = money(totals.subtotal);
+        document.getElementById('tax').textContent = money(totals.tax);
+        document.getElementById('grand-total').textContent = money(totals.total);
+      }
+      function renderTicket() {
+        const totals = cartTotals();
+        const items = document.getElementById('ticket-items');
+        document.getElementById('ticket-date').textContent = today();
+        const ticketNo = String(state.movements.filter(m => m.type === 'sale').length + 1).padStart(4, '0');
+        document.getElementById('ticket-number').textContent = ticketNo;
+        document.getElementById('ticket-meta-number').textContent = '#' + ticketNo;
+        items.innerHTML = state.cart.length ? state.cart.map(item => `<div class="ticket-item"><span>${escapeHtml(item.name)}</span><strong>${money(item.qty * item.price)}</strong><small>${item.qty} × ${money(item.price)}</small></div>`).join('') : '<div class="empty">Agrega productos para ver el ticket.</div>';
+        document.getElementById('ticket-subtotal').textContent = money(totals.subtotal);
+        document.getElementById('ticket-tax').textContent = money(totals.tax);
+        document.getElementById('ticket-grand').textContent = money(totals.total);
+      }
+      function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[char])); }
+      function setView(view) {
+        activeView = view;
+        document.querySelectorAll('.view').forEach(el => el.classList.toggle('active', el.id === `view-${view}`));
+        document.querySelectorAll('.nav button').forEach(el => el.classList.toggle('active', el.dataset.view === view));
+        document.getElementById('crumb-label').textContent = ({ home:'Resumen general', inventory:'Control de inventario', sales:'Generación de ticket', requirements:'Requisitos del proyecto' })[view];
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      function addMovement(productId, type, qty, note, extra = {}) {
+        const p = product(productId); if (!p || qty < 1) return false;
+        if (type === 'exit' && p.stock < qty) { showToast(`No hay suficientes unidades de ${p.name}.`); return false; }
+        p.stock += type === 'entry' ? qty : -qty;
+        state.movements.unshift({ id: Date.now(), productId: p.id, name: p.name, type, qty, note, date: today(), ...extra });
+        saveState(); renderAll(); return true;
+      }
+
+      document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => setView(button.dataset.view)));
+      document.querySelectorAll('[data-go]').forEach(button => button.addEventListener('click', () => setView(button.dataset.go)));
+      document.getElementById('movement-form').addEventListener('submit', event => {
+        event.preventDefault();
+        const id = document.getElementById('movement-product').value;
+        const type = document.querySelector('input[name="movement-type"]:checked').value;
+        const qty = Number(document.getElementById('movement-qty').value);
+        const note = document.getElementById('movement-note').value.trim();
+        if (addMovement(id, type, qty, note)) { event.target.reset(); showToast(type === 'entry' ? 'Entrada registrada correctamente.' : 'Salida registrada correctamente.'); }
+      });
+      document.getElementById('inventory-search').addEventListener('input', renderInventory);
+      document.getElementById('inventory-filter').addEventListener('change', renderInventory);
+      document.getElementById('inventory-table').addEventListener('click', event => {
+        const button = event.target.closest('[data-adjust]'); if (!button) return;
+        document.getElementById('movement-product').value = button.dataset.adjust; setView('inventory'); document.getElementById('movement-qty').focus();
+      });
+      document.getElementById('add-to-cart').addEventListener('click', () => {
+        const id = Number(document.getElementById('sale-product').value); const p = product(id); const qty = Number(document.getElementById('sale-qty').value);
+        if (!p || qty < 1) return;
+        const existing = state.cart.find(item => item.id === id); const inCart = existing ? existing.qty : 0;
+        if (inCart + qty > p.stock) { showToast(`Solo hay ${p.stock} unidades disponibles.`); return; }
+        if (existing) existing.qty += qty; else state.cart.push({ id: p.id, name: p.name, category: p.category, price: p.price, qty });
+        document.getElementById('sale-qty').value = 1; renderCart(); renderTicket(); showToast('Producto agregado al ticket.');
+      });
+      document.getElementById('cart-table').addEventListener('click', event => {
+        const minus = event.target.closest('[data-cart-minus]'); const plus = event.target.closest('[data-cart-plus]'); const remove = event.target.closest('[data-cart-remove]');
+        const id = Number((minus || plus || remove)?.dataset[(minus ? 'cartMinus' : plus ? 'cartPlus' : 'cartRemove')]); const item = state.cart.find(i => i.id === id); if (!item) return;
+        if (minus) item.qty--; if (plus) { const p = product(id); if (item.qty < p.stock) item.qty++; else showToast('La cantidad supera el stock disponible.'); } if (remove || item.qty < 1) state.cart = state.cart.filter(i => i.id !== id); renderCart(); renderTicket();
+      });
+      document.getElementById('clear-cart').addEventListener('click', () => { state.cart = []; renderCart(); renderTicket(); showToast('Carrito vacío.'); });
+      document.getElementById('complete-sale').addEventListener('click', () => {
+        if (!state.cart.length) { showToast('Agrega al menos un producto para confirmar.'); return; }
+        const saleItems = state.cart.map(item => ({ ...item }));
+        for (const item of saleItems) { const ok = addMovement(item.id, 'exit', item.qty, 'Venta confirmada', { type: 'sale' }); if (!ok) return; }
+        state.cart = []; saveState(); renderAll(); showToast('Venta confirmada y stock actualizado.');
+      });
+      document.getElementById('print-ticket').addEventListener('click', () => { if (!state.cart.length) { showToast('Agrega productos para imprimir el ticket.'); return; } window.print(); });
+
+      const modal = document.getElementById('modal-backdrop');
+      function closeModal() { modal.classList.remove('open'); }
+      document.getElementById('open-add-product').addEventListener('click', () => { modal.classList.add('open'); document.getElementById('new-name').focus(); });
+      document.getElementById('close-modal').addEventListener('click', closeModal); document.getElementById('cancel-modal').addEventListener('click', closeModal);
+      modal.addEventListener('click', event => { if (event.target === modal) closeModal(); });
+      document.getElementById('product-form').addEventListener('submit', event => {
+        event.preventDefault();
+        const name = document.getElementById('new-name').value.trim(); const category = document.getElementById('new-category').value.trim(); const icon = document.getElementById('new-icon').value.trim() || '✦'; const stock = Number(document.getElementById('new-stock').value); const min = Number(document.getElementById('new-min').value); const price = Number(document.getElementById('new-price').value);
+        state.products.push({ id: Date.now(), name, category, icon, stock, min, price }); saveState(); renderAll(); event.target.reset(); closeModal(); showToast('Producto agregado al catálogo.');
+      });
+      document.addEventListener('keydown', event => { if (event.key === 'Escape') closeModal(); });
+      renderAll();
+    })();
+  </script>
+
+
+<script>(function P(e,t){let n=!1,r=!1,i=null,o=null,a=[],s=0,l=0,c=null,u=0,d=t=>parent.postMessage({...t,channel:e},"*"),m=new Map(t),f=(e,t)=>{if(!t.text)return null;let n=document.createTreeWalker(e,4),r=document.createRange(),i=0,o=!1;for(let e=n.nextNode();e;e=n.nextNode()){let n=e.textContent?.length??0;if(!o&&t.text.start<i+n&&(r.setStart(e,t.text.start-i),o=!0),o&&t.text.end<=i+n)return r.setEnd(e,t.text.end-i),r.toString()===t.quote?r:null;i+=n}return null},p=e=>{let t=document.body;for(let n of e.childIndexPath)t=t?.children[n];return t&&t.tagName.toUpperCase()===e.tagName&&(e.region||(e.text?!!f(t,e):(t.textContent?.trim()??"")===e.quote&&(e.quote.length>0||!!e.fingerprint&&(e=>{let t=e.cloneNode(!0);for(let e of[t,...t.querySelectorAll("*")])for(let t of Array.from(e.attributes)){let n=m.get(t.value);void 0!==n&&e.setAttribute(t.name,n)}let n=t.outerHTML,r=0x811c9dc5,i=5381;for(let e=0;e<n.length;e++)r=Math.imul(r^n.charCodeAt(e),0x1000193),i=Math.imul(i,33)^n.charCodeAt(e);return`${(r>>>0).toString(16).padStart(8,"0")}${(i>>>0).toString(16).padStart(8,"0")}:${n.length}`})(t)===e.fingerprint)))?t:null},h=(e,t)=>{let n=t?.text?f(e,t)?.getBoundingClientRect():e.getBoundingClientRect();if(!n)return null;let r=t?.region,i=r?{x:n.x+r.x*n.width,y:n.y+r.y*n.height,width:r.width*n.width,height:r.height*n.height}:n;return i.width>0&&i.height>0?{x:i.x,y:i.y,width:i.width,height:i.height}:null},g=()=>{u=0;let e=o&&p(o),t=e&&h(e,o??void 0);t||(o=null);let n=a.flatMap(e=>{let t=p(e.anchor),n=t&&h(t,e.anchor);if(!n||!t)return[];let r=e.anchor.text&&f(t,e.anchor),i=r?Array.from(r.getClientRects()).filter(e=>e.width>0&&e.height>0).map(e=>({x:e.x,y:e.y,width:e.width,height:e.height})):void 0;return[{id:e.id,rect:n,...i?{textRects:i}:{}}]}),r=++l,i=Math.max(1,Math.ceil(n.length/200));for(let e=0;e<i;e++)d({kind:"state",generation:s,report:r,batch:e,batches:i,selection:o&&t?{anchor:o,rect:t}:null,marks:n.slice(200*e,(e+1)*200)})},v=()=>{u||(u=requestAnimationFrame(g))};addEventListener("message",t=>{if(t.source!==parent||!t.data||t.data.channel!==e)return;let i=t.data;if("clearSelection"===i.kind)document.getSelection()?.removeAllRanges(),o=null,v();else if("sync"===i.kind&&Array.isArray(i.marks)&&i.marks.length<=200){if(![i.generation,i.batch,i.batches].every(e=>Number.isSafeInteger(e)&&e>=0)||i.batches<1||i.batch>=i.batches||i.generation<=s||c&&i.generation<c.generation)return;if(0===i.batch){if(c&&i.generation===c.generation)return;c={generation:i.generation,batches:i.batches,next:0,marks:[],enabled:!0===i.enabled,region:!0===i.region}}if(!c||c.generation!==i.generation||c.next!==i.batch||c.batches!==i.batches||(c.marks.push(...i.marks),c.next++,c.next!==c.batches))return;n=c.enabled,r=c.region,a=c.marks,s=c.generation,c=null,n||(o=null),v()}else if("reveal"===i.kind&&i.anchor&&Array.isArray(i.anchor.childIndexPath)){let e=p(i.anchor),t=e&&h(e,i.anchor);e&&t&&(i.anchor.region||i.anchor.text?window.scrollBy({left:t.x+t.width/2-innerWidth/2,top:t.y+t.height/2-innerHeight/2,behavior:"instant"}):e.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"})),requestAnimationFrame(()=>{let e=p(i.anchor),t=e&&h(e,i.anchor),n=!!t&&t.x<innerWidth&&t.y<innerHeight&&t.x+t.width>0&&t.y+t.height>0;d({kind:"revealed",sequence:i.sequence,available:n}),v()})}});let x=!1,b=null,y=()=>{if(!n||r)return;let e=document.getSelection();if(o=null,e&&!e.isCollapsed&&1===e.rangeCount){let t=e.getRangeAt(0),n=t.commonAncestorContainer,r=n instanceof Element?n:n.parentElement,i=t.toString();if(r&&document.body.contains(r)&&i.trim()&&i.length<=8e3&&!r.closest("input,textarea,select,[contenteditable],script,style")){let e=[],n=r;for(;n&&n!==document.body;){let t=n.parentElement;if(!t||e.length>=64)return void v();e.unshift(Array.from(t.children).indexOf(n)),n=t}let a=document.createRange();a.selectNodeContents(r),a.setEnd(t.startContainer,t.startOffset);let s=a.toString().length;o={childIndexPath:e,tagName:r.tagName,quote:i,text:{start:s,end:s+i.length}}}}v()};addEventListener("keyup",e=>{"Escape"!==e.key&&y()}),addEventListener("click",e=>{r&&(e.preventDefault(),e.stopImmediatePropagation())},!0),addEventListener("click",e=>{if(r||0!==e.button||e.target instanceof Element&&e.target.closest("a[href]")||!(document.getSelection()?.isCollapsed??!0))return;let t=a.find(t=>{let n=p(t.anchor);if(!n)return!1;let r=t.anchor.text?f(n,t.anchor):null;return(r?Array.from(r.getClientRects()):[h(n,t.anchor)]).some(t=>!!t&&e.clientX>=t.x&&e.clientX<=t.x+t.width&&e.clientY>=t.y&&e.clientY<=t.y+t.height)});t&&d({kind:"open",id:t.id})}),document.addEventListener("selectionchange",()=>{x||y()}),addEventListener("pointerdown",e=>{let t="touch"===e.pointerType||"pen"===e.pointerType;if(x=!t&&0===e.button,b=t&&!document.getSelection()?.isCollapsed?{id:e.pointerId,x:e.clientX,y:e.clientY}:null,!r||0!==e.button)return;e.preventDefault(),e.stopImmediatePropagation();let n=document.body.getBoundingClientRect();n.width&&n.height&&(i={x:Math.max(0,Math.min(1,(e.clientX-n.x)/n.width)),y:Math.max(0,Math.min(1,(e.clientY-n.y)/n.height))})},!0),addEventListener("pointerup",e=>{if(x=!1,b&&b.id===e.pointerId&&(e=>{if(!b||Math.hypot(e.clientX-b.x,e.clientY-b.y)>10||e.target instanceof Element&&e.target.closest("a,button,input,textarea,select,label,summary,[role],[contenteditable]"))return!1;let t=document.getSelection();return!!t&&!t.isCollapsed&&!!t.rangeCount&&!Array.from(t.getRangeAt(0).getClientRects()).some(t=>e.clientX>=t.left-24&&e.clientX<=t.right+24&&e.clientY>=t.top-24&&e.clientY<=t.bottom+24)})(e)&&document.getSelection()?.removeAllRanges(),b=null,!r)return void y();if(!i)return;e.preventDefault(),e.stopImmediatePropagation();let t=document.body.getBoundingClientRect(),n={x:Math.max(0,Math.min(1,(e.clientX-t.x)/t.width)),y:Math.max(0,Math.min(1,(e.clientY-t.y)/t.height))},a={x:Math.min(i.x,n.x),y:Math.min(i.y,n.y),width:Math.abs(i.x-n.x),height:Math.abs(i.y-n.y)};i=null,o=a.width*t.width>=4&&a.height*t.height>=4?{childIndexPath:[],tagName:"BODY",quote:"",region:a}:null,v()},!0),addEventListener("pointercancel",()=>{i=null,x=!1,b=null,y()}),addEventListener("keydown",e=>{"Escape"===e.key&&(document.getSelection()?.removeAllRanges(),o=null,v())}),addEventListener("scroll",v,!0),addEventListener("resize",v),new MutationObserver(v).observe(document.body,{subtree:!0,childList:!0,characterData:!0,attributes:!0}),new ResizeObserver(v).observe(document.body),g()})("f809dbf3-fc20-4a83-87f5-d60a588c7f88",[])</script></body></html>
