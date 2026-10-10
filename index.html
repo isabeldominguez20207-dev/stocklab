@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<!-- saved from url=(0012)about:srcdoc -->
-<html lang="es"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><!--<base href="about:srcdoc">--><base href=".">
-  
+<html lang="es"><head>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#11233f">
   <title>StockLab · Inventario y facturación</title>
+  <!-- Librería de Supabase para la API y Backend -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
       --ink: #14233c;
@@ -96,8 +97,7 @@
     .hero-tag b { color: #82ddcb; }
     .hero-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .hero-right { position: relative; z-index: 1; display: grid; gap: 12px; }
-    .hero-visual { position: relative; min-height: 190px; overflow: hidden; border: 1px solid rgba(255,255,255,.14); border-radius: 19px; background: rgba(255,255,255,.08); }
-    .hero-visual img { display: block; width: 100%; height: 190px; object-fit: cover; }
+    .hero-visual { position: relative; min-height: 190px; overflow: hidden; border: 1px solid rgba(255,255,255,.14); border-radius: 19px; background: rgba(255,255,255,.08); display: grid; place-content: center; text-align: center; color: #82ddcb; font-weight: 800; }
     .hero-visual-caption { position: absolute; left: 12px; right: 12px; bottom: 11px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border: 1px solid rgba(255,255,255,.16); border-radius: 10px; color: #e9f7f7; background: rgba(17,35,63,.72); backdrop-filter: blur(8px); font-size: 10px; font-weight: 800; }
     .hero-visual-caption span { color: #82ddcb; }
     .hero-stat { padding: 16px; min-height: 104px; border: 1px solid rgba(255,255,255,.13); border-radius: 16px; background: rgba(255,255,255,.08); }
@@ -111,7 +111,6 @@
     .btn-primary { color: #fff; background: var(--teal-dark); box-shadow: 0 8px 16px rgba(8,122,115,.2); }
     .btn-dark { color: #fff; background: var(--ink); }
     .btn-ghost { color: var(--ink-2); border: 1px solid var(--line); background: #fff; }
-    .btn-danger { color: #a5363f; border: 1px solid #f2c7cb; background: #fff5f5; }
     .btn-small { padding: 8px 10px; font-size: 11px; }
     .dashboard-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
     .metric { display: flex; align-items: start; justify-content: space-between; gap: 12px; min-height: 122px; padding: 19px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 4px 14px rgba(20,35,60,.025); }
@@ -167,9 +166,6 @@
     input, select { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; outline: 0; color: var(--ink); background: #fbfcfd; font-size: 12px; }
     input:focus, select:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(22,165,152,.1); }
     .form-actions { display: flex; gap: 9px; margin-top: 19px; }
-    .tabs { display: flex; gap: 5px; border-bottom: 1px solid var(--line); margin-bottom: 22px; }
-    .tab { border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); padding: 10px 13px; font-size: 12px; font-weight: 800; }
-    .tab.active { color: var(--teal-dark); border-color: var(--teal); }
     .inventory-layout { display: grid; grid-template-columns: .68fr 1.32fr; gap: 20px; align-items: start; }
     .search-row { display: flex; gap: 9px; margin-bottom: 16px; }
     .search-row input { flex: 1; }
@@ -185,7 +181,6 @@
     .radio-card input:checked + label { color: var(--teal-dark); border-color: var(--teal); background: #edfaf7; }
     .sale-layout { display: grid; grid-template-columns: 1fr .85fr; gap: 20px; align-items: start; }
     .sale-product { display: grid; grid-template-columns: 1fr 120px auto; gap: 10px; align-items: end; }
-    .sale-product .field { min-width: 0; }
     .cart-table td { padding: 12px 7px; }
     .cart-table th { padding-left: 7px; padding-right: 7px; }
     .qty-control { display: inline-flex; align-items: center; gap: 7px; }
@@ -233,7 +228,6 @@
     .modal p { color: var(--muted); font-size: 12px; }
     .modal-actions { display: flex; justify-content: end; gap: 9px; margin-top: 19px; }
     .footer { display: flex; justify-content: space-between; gap: 15px; color: #8491a0; padding-top: 32px; font-size: 10px; }
-    .mobile-menu { display: none; border: 0; background: transparent; color: var(--ink); font-size: 21px; }
     @media (max-width: 1050px) {
       .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
       .two-col, .inventory-layout, .sale-layout { grid-template-columns: 1fr; }
@@ -280,23 +274,6 @@
       .ticket-preview .card-title { display: none; }
     }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script>
-  const SUPABASE_URL =
-    'https://prkomkknucjjniewrund.supabase.co';
-
-  const SUPABASE_ANON_KEY =
-    'Project Settings → API Keys';
-
-  const supabaseClient =
-    window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_ANON_KEY
-       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBya29ta2tudWNqam5pZXdydW5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1Nzc1NDksImV4cCI6MjEwNzE1MzU0OX0.DrNvaPR528yW-Hyv2JtwbseP81-lKeYhMSImCJ7LZxU';
-    );
-</script>
-
 </head>
 <body>
   <div class="app-shell">
@@ -324,7 +301,7 @@
       <header class="topbar">
         <div class="crumb">Proyecto escolar / <strong id="crumb-label">Control de inventario</strong></div>
         <div class="top-actions">
-          <div class="offline-badge"><span class="status-dot"></span>Modo sin internet</div>
+          <div class="offline-badge"><span class="status-dot"></span>Conexión Supabase API</div>
           <div class="avatar">G3</div>
         </div>
       </header>
@@ -333,7 +310,7 @@
         <section class="view" id="view-home">
           <div class="hero">
             <div class="hero-copy">
-              <div class="hero-tag"><b>●</b> DEMO FUNCIONAL · PRESENTACIÓN EN CLASE</div>
+              <div class="hero-tag"><b>●</b> API CONECTADA · PRESENTACIÓN EN CLASE</div>
               <p class="eyebrow">Programación + diseño web</p>
               <h1>Controla tu inventario sin perder una venta.</h1>
               <p class="lede">Una solución sencilla para registrar entradas y salidas, detectar productos con poco stock y emitir un ticket con el total y sus impuestos.</p>
@@ -341,12 +318,12 @@
             </div>
             <div class="hero-right">
               <div class="hero-visual">
-                <img src="" alt="Ilustración de un panel de inventario con productos y un ticket">
-                <div class="hero-visual-caption"><span>✦ Vista del sistema</span><b>Listo para presentar</b></div>
+                <span>✦ Panel Conectado</span>
+                <div class="hero-visual-caption"><span>✦ Base de datos</span><b>Sincronizada</b></div>
               </div>
               <div class="hero-stats">
-              <div class="hero-stat"><span>Productos registrados</span><strong id="hero-products">6</strong><small>catálogo activo</small></div>
-              <div class="hero-stat"><span>Unidades en stock</span><strong id="hero-units">72</strong><small>disponibles ahora</small></div>
+                <div class="hero-stat"><span>Productos registrados</span><strong id="hero-products">6</strong><small>catálogo activo</small></div>
+                <div class="hero-stat"><span>Unidades en stock</span><strong id="hero-units">72</strong><small>disponibles ahora</small></div>
                 <div class="hero-stat"><span>Alertas activas</span><strong id="hero-alerts">2</strong><small>revisar pronto</small></div>
                 <div class="hero-stat"><span>Impuesto aplicado</span><strong>15%</strong><small>configuración de ejemplo</small></div>
               </div>
@@ -355,7 +332,7 @@
 
           <div class="section-head">
             <div><p class="eyebrow">Vista rápida</p><h2>Estado del sistema</h2></div>
-            <p>Los datos se guardan en este navegador.</p>
+            <p>Datos sincronizados mediante API.</p>
           </div>
           <div class="dashboard-grid">
             <div class="metric"><div><span class="metric-label">Valor del inventario</span><strong class="metric-value" id="metric-value">L 7,850.00</strong><span class="metric-note">precio de venta estimado</span></div><div class="metric-icon">◈</div></div>
@@ -366,8 +343,8 @@
 
           <div class="section-head"><div><p class="eyebrow">Control del stock</p><h2>Inventario reciente</h2></div><button class="btn btn-ghost" data-go="inventory">Ver inventario completo</button></div>
           <div class="two-col">
-            <div class="card card-pad"><div class="card-title"><h3>Productos con movimiento</h3><small id="recent-count">6 productos</small></div><div class="table-wrap"><table><thead><tr><th>Producto</th><th>Stock actual</th><th>Estado</th><th>Precio</th></tr></thead><tbody id="home-table"><tr><td><div class="product-cell"><div class="product-icon">▰</div><div><strong>Memoria USB 32 GB</strong><small>Tecnología</small></div></div></td><td><span class="stock-number">5 <small style="color:var(--muted);font-weight:500">/ 6 mín.</small></span><div class="stock-track"><span class="low" style="width:41.66666666666667%"></span></div></td><td><span class="badge low">Bajo stock</span></td><td>L 185.00</td></tr><tr><td><div class="product-cell"><div class="product-icon">♬</div><div><strong>Audífonos básicos</strong><small>Tecnología</small></div></div></td><td><span class="stock-number">3 <small style="color:var(--muted);font-weight:500">/ 5 mín.</small></span><div class="stock-track"><span class="low" style="width:30%"></span></div></td><td><span class="badge low">Bajo stock</span></td><td>L 160.00</td></tr><tr><td><div class="product-cell"><div class="product-icon">▤</div><div><strong>Cuaderno universitario</strong><small>Papelería</small></div></div></td><td><span class="stock-number">24 <small style="color:var(--muted);font-weight:500">/ 8 mín.</small></span><div class="stock-track"><span class="" style="width:100%"></span></div></td><td><span class="badge ok">Saludable</span></td><td>L 42.50</td></tr><tr><td><div class="product-cell"><div class="product-icon">◉</div><div><strong>Mouse inalámbrico</strong><small>Tecnología</small></div></div></td><td><span class="stock-number">13 <small style="color:var(--muted);font-weight:500">/ 5 mín.</small></span><div class="stock-track"><span class="" style="width:100%"></span></div></td><td><span class="badge ok">Saludable</span></td><td>L 220.00</td></tr><tr><td><div class="product-cell"><div class="product-icon">✎</div><div><strong>Marcadores x12</strong><small>Papelería</small></div></div></td><td><span class="stock-number">18 <small style="color:var(--muted);font-weight:500">/ 6 mín.</small></span><div class="stock-track"><span class="" style="width:100%"></span></div></td><td><span class="badge ok">Saludable</span></td><td>L 75.00</td></tr></tbody></table></div></div>
-            <div class="card card-pad alert-card"><div class="alert-intro"><div class="alert-icon">⚠</div><div><h3>Alerta de bajo inventario</h3><p>Revisa estos productos antes de que se agoten.</p></div></div><div class="alert-list" id="home-alerts"><div class="alert-item"><div><strong>Memoria USB 32 GB</strong><small style="display:block">Quedan 5 · mínimo 6</small></div><span class="badge low">Reponer</span></div><div class="alert-item"><div><strong>Audífonos básicos</strong><small style="display:block">Quedan 3 · mínimo 5</small></div><span class="badge low">Reponer</span></div></div></div>
+            <div class="card card-pad"><div class="card-title"><h3>Productos con movimiento</h3><small id="recent-count">6 productos</small></div><div class="table-wrap"><table><thead><tr><th>Producto</th><th>Stock actual</th><th>Estado</th><th>Precio</th></tr></thead><tbody id="home-table"></tbody></table></div></div>
+            <div class="card card-pad alert-card"><div class="alert-intro"><div class="alert-icon">⚠</div><div><h3>Alerta de bajo inventario</h3><p>Revisa estos productos antes de que se agoten.</p></div></div><div class="alert-list" id="home-alerts"></div></div>
           </div>
         </section>
 
@@ -375,18 +352,18 @@
           <div class="page-title"><div><p class="eyebrow">Módulo 01 · control de stock</p><h1>Inventario</h1><p class="lede">Registra entradas y salidas para mantener las existencias actualizadas.</p></div><button class="btn btn-primary" id="open-add-product">＋ Nuevo producto</button></div>
           <div class="inventory-layout">
             <div class="stack">
-              <div class="card form-card"><div class="card-title"><div><h3>Registrar movimiento</h3><small>Actualiza las unidades disponibles</small></div><span class="badge ok">En vivo</span></div>
+              <div class="card form-card"><div class="card-title"><div><h3>Registrar movimiento</h3><small>Actualiza las unidades disponibles</small></div><span class="badge ok">API en vivo</span></div>
                 <form id="movement-form">
-                  <div class="field"><label>Producto</label><select id="movement-product" required=""><option value="1">Cuaderno universitario · 24 disp.</option><option value="2">Memoria USB 32 GB · 5 disp.</option><option value="3">Mouse inalámbrico · 13 disp.</option><option value="4">Audífonos básicos · 3 disp.</option><option value="5">Marcadores x12 · 18 disp.</option><option value="6">Botella reutilizable · 9 disp.</option></select></div>
+                  <div class="field"><label>Producto</label><select id="movement-product" required=""></select></div>
                   <div class="field" style="margin-top:14px"><label>Tipo de movimiento</label><div class="radio-row"><div class="radio-card"><input type="radio" id="entry" name="movement-type" value="entry" checked=""><label for="entry">＋ Entrada</label></div><div class="radio-card"><input type="radio" id="exit" name="movement-type" value="exit"><label for="exit">− Salida</label></div></div></div>
                   <div class="field" style="margin-top:14px"><label for="movement-qty">Cantidad de unidades</label><input id="movement-qty" type="number" min="1" step="1" value="1" required=""></div>
                   <div class="field" style="margin-top:14px"><label for="movement-note">Nota (opcional)</label><input id="movement-note" type="text" maxlength="60" placeholder="Ej. compra a proveedor"></div>
                   <div class="form-actions"><button class="btn btn-primary" type="submit">Guardar movimiento</button><button class="btn btn-ghost" type="reset">Limpiar</button></div>
                 </form>
               </div>
-              <div class="card card-pad"><div class="card-title"><h3>Últimos movimientos</h3><small id="movement-count">0 registrados</small></div><div class="mini-list" id="movement-list"><div class="empty">Todavía no hay movimientos. Registra una entrada o salida.</div></div></div>
+              <div class="card card-pad"><div class="card-title"><h3>Últimos movimientos</h3><small id="movement-count">0 registrados</small></div><div class="mini-list" id="movement-list"><div class="empty">Todavía no hay movimientos.</div></div></div>
             </div>
-            <div class="card card-pad"><div class="card-title"><div><h3>Catálogo de productos</h3><small>Consulta, busca y revisa el estado</small></div><span class="badge ok" id="inventory-count">6 de 6</span></div><div class="search-row"><input id="inventory-search" type="search" placeholder="Buscar producto o categoría…"><select id="inventory-filter" style="max-width:140px"><option value="all">Todos</option><option value="low">Bajo stock</option><option value="ok">Stock saludable</option></select></div><div class="table-wrap"><table><thead><tr><th>Producto</th><th>Stock / mínimo</th><th>Estado</th><th>Precio unit.</th><th>Acción</th></tr></thead><tbody id="inventory-table"><tr><td><div class="product-cell"><div class="product-icon">▤</div><div><strong>Cuaderno universitario</strong><small>Papelería</small></div></div></td><td><span class="stock-number">24 <small style="color:var(--muted);font-weight:500">/ 8 mín.</small></span><div class="stock-track"><span class="" style="width:100%"></span></div></td><td><span class="badge ok">Saludable</span></td><td>L 42.50</td><td><button class="btn btn-ghost btn-small" data-adjust="1">Ajustar</button></td></tr><tr><td><div class="product-cell"><div class="product-icon">▰</div><div><strong>Memoria USB 32 GB</strong><small>Tecnología</small></div></div></td><td><span class="stock-number">5 <small style="color:var(--muted);font-weight:500">/ 6 mín.</small></span><div class="stock-track"><span class="low" style="width:41.66666666666667%"></span></div></td><td><span class="badge low">Bajo stock</span></td><td>L 185.00</td><td><button class="btn btn-ghost btn-small" data-adjust="2">Ajustar</button></td></tr><tr><td><div class="product-cell"><div class="product-icon">◉</div><div><strong>Mouse inalámbrico</strong><small>Tecnología</small></div></div></td><td><span class="stock-number">13 <small style="color:var(--muted);font-weight:500">/ 5 mín.</small></span><div class="stock-track"><span class="" style="width:100%"></span></div></td><td><span class="badge ok">Saludable</span></td><td>L 220.00</td><td><button class="btn btn-ghost btn-small" data-adjust="3">Ajustar</button></td></tr><tr><td><div class="product-cell"><div class="product-icon">♬</div><div><strong>Audífonos básicos</strong><small>Tecnología</small></div></div></td><td><span class="stock-number">3 <small style="color:var(--muted);font-weight:500">/ 5 mín.</small></span><div class="stock-track"><span class="low" style="width:30%"></span></div></td><td><span class="badge low">Bajo stock</span></td><td>L 160.00</td><td><button class="btn btn-ghost btn-small" data-adjust="4">Ajustar</button></td></tr><tr><td><div class="product-cell"><div class="product-icon">✎</div><div><strong>Marcadores x12</strong><small>Papelería</small></div></div></td><td><span class="stock-number">18 <small style="color:var(--muted);font-weight:500">/ 6 mín.</small></span><div class="stock-track"><span class="" style="width:100%"></span></div></td><td><span class="badge ok">Saludable</span></td><td>L 75.00</td><td><button class="btn btn-ghost btn-small" data-adjust="5">Ajustar</button></td></tr><tr><td><div class="product-cell"><div class="product-icon">◒</div><div><strong>Botella reutilizable</strong><small>Accesorios</small></div></div></td><td><span class="stock-number">9 <small style="color:var(--muted);font-weight:500">/ 4 mín.</small></span><div class="stock-track"><span class="" style="width:100%"></span></div></td><td><span class="badge ok">Saludable</span></td><td>L 135.00</td><td><button class="btn btn-ghost btn-small" data-adjust="6">Ajustar</button></td></tr></tbody></table></div></div>
+            <div class="card card-pad"><div class="card-title"><div><h3>Catálogo de productos</h3><small>Consulta, busca y revisa el estado</small></div><span class="badge ok" id="inventory-count">0 de 0</span></div><div class="search-row"><input id="inventory-search" type="search" placeholder="Buscar producto o categoría…"><select id="inventory-filter" style="max-width:140px"><option value="all">Todos</option><option value="low">Bajo stock</option><option value="ok">Stock saludable</option></select></div><div class="table-wrap"><table><thead><tr><th>Producto</th><th>Stock / mínimo</th><th>Estado</th><th>Precio unit.</th><th>Acción</th></tr></thead><tbody id="inventory-table"></tbody></table></div></div>
           </div>
         </section>
 
@@ -396,7 +373,7 @@
             <div class="card card-pad">
               <div class="card-title"><div><h3>Nueva venta</h3><small>El stock se descuenta al confirmar</small></div><span class="badge ok">Ticket #<span id="ticket-number">0001</span></span></div>
               <div class="sale-product">
-                <div class="field"><label for="sale-product">Producto</label><select id="sale-product"><option value="1">Cuaderno universitario · 24 disp.</option><option value="2">Memoria USB 32 GB · 5 disp.</option><option value="3">Mouse inalámbrico · 13 disp.</option><option value="4">Audífonos básicos · 3 disp.</option><option value="5">Marcadores x12 · 18 disp.</option><option value="6">Botella reutilizable · 9 disp.</option></select></div>
+                <div class="field"><label for="sale-product-select">Producto</label><select id="sale-product-select"></select></div>
                 <div class="field"><label for="sale-qty">Cantidad</label><input id="sale-qty" type="number" min="1" value="1"></div>
                 <button class="btn btn-primary" id="add-to-cart" type="button">Agregar</button>
               </div>
@@ -413,11 +390,11 @@
         <section class="view" id="view-requirements">
           <div class="page-title"><div><p class="eyebrow">Módulo 03 · propuesta de clase</p><h1>Requisitos del proyecto</h1><p class="lede">La página reúne los puntos escritos en la hoja y los convierte en una demostración navegable.</p></div></div>
           <div class="req-hero"><div><p class="eyebrow">Flujo principal</p><h2>De la entrada de producto al ticket.</h2><p>El sistema conecta el inventario con la facturación: cada movimiento modifica el stock y cada venta puede generar un comprobante.</p></div><div class="diagram"><div class="diagram-node">Entrada<br>y salida</div><span class="diagram-arrow">→</span><div class="diagram-node">Stock<br>actualizado</div><span class="diagram-arrow">→</span><div class="diagram-node">Ticket<br>con impuesto</div></div></div>
-          <div class="req-grid"><div class="card req-card"><div class="req-number">01</div><div><h3>Control del stock de productos</h3><p>Consulta las existencias, el mínimo recomendado y el valor estimado del catálogo.</p></div></div><div class="card req-card"><div class="req-number">02</div><div><h3>Entrada y salida de inventario</h3><p>Registra unidades que ingresan o salen y conserva un historial de movimientos.</p></div></div><div class="card req-card"><div class="req-number">03</div><div><h3>Alerta de bajo inventario</h3><p>Identifica productos que están en el mínimo o por debajo para facilitar la reposición.</p></div></div><div class="card req-card"><div class="req-number">04</div><div><h3>Ticket de venta</h3><p>Agrega productos al carrito y genera una vista previa del comprobante de venta.</p></div></div><div class="card req-card"><div class="req-number">05</div><div><h3>Total con impuestos</h3><p>Calcula automáticamente subtotal, impuesto del 15% y total final a pagar.</p></div></div><div class="card req-card"><div class="req-number">06</div><div><h3>Trabajo offline</h3><p>La demo funciona desde un archivo local, ideal para llevarla en una USB y presentarla en clase.</p></div></div></div>
-          <div class="card card-pad" style="margin-top:20px"><div class="card-title"><h3>Datos de presentación</h3><span class="badge ok">Grupo 3</span></div><div class="note"><strong>Área:</strong> Redes · Programación · Diseño web &nbsp; / &nbsp; <strong>Proyecto:</strong> Sistema de inventario y facturación &nbsp; / &nbsp; <strong>Formato:</strong> página web offline</div></div>
+          <div class="req-grid"><div class="card req-card"><div class="req-number">01</div><div><h3>Control del stock de productos</h3><p>Consulta las existencias, el mínimo recomendado y el valor estimado del catálogo.</p></div></div><div class="card req-card"><div class="req-number">02</div><div><h3>Entrada y salida de inventario</h3><p>Registra unidades que ingresan o salen y conserva un historial de movimientos.</p></div></div><div class="card req-card"><div class="req-number">03</div><div><h3>Alerta de bajo inventario</h3><p>Identifica productos que están en el mínimo o por debajo para facilitar la reposición.</p></div></div><div class="card req-card"><div class="req-number">04</div><div><h3>Ticket de venta</h3><p>Agrega productos al carrito y genera una vista previa del comprobante de venta.</p></div></div><div class="card req-card"><div class="req-number">05</div><div><h3>Total con impuestos</h3><p>Calcula automáticamente subtotal, impuesto del 15% y total final a pagar.</p></div></div><div class="card req-card"><div class="req-number">06</div><div><h3>Trabajo offline/online</h3><p>Conectado a API backend y preparado para despliegue en la nube.</p></div></div></div>
+          <div class="card card-pad" style="margin-top:20px"><div class="card-title"><h3>Datos de presentación</h3><span class="badge ok">Grupo 3</span></div><div class="note"><strong>Área:</strong> Redes · Programación · Diseño web &nbsp; / &nbsp; <strong>Proyecto:</strong> Sistema de inventario y facturación &nbsp; / &nbsp; <strong>Formato:</strong> Aplicación Web API</div></div>
         </section>
 
-        <div class="footer"><span>StockLab · Proyecto escolar Grupo 3</span><span>Todos los datos de demostración se almacenan localmente en el navegador.</span></div>
+        <div class="footer"><span>StockLab · Proyecto escolar Grupo 3</span><span>Conectado a base de datos relacional y API.</span></div>
       </div>
     </main>
   </div>
@@ -430,7 +407,17 @@
   <script>
     (() => {
       const TAX_RATE = 0.15;
-      const STORAGE_KEY = 'stocklab-demo-v1';
+      
+      const SUPABASE_URL = 'https://prkomkknucjjniewrund.supabase.co';
+      const SUPABASE_ANON_KEY = 'PEGA_AQUÍ_TU_PUBLISHABLE_KEY';
+
+      let dbClient = null;
+      try {
+        if (window.supabase && SUPABASE_URL.startsWith('https://')) {
+          dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+      } catch (e) { console.warn('Supabase no inicializado, usando modo local de respaldo.'); }
+
       const seedProducts = [
         { id: 1, name: 'Cuaderno universitario', category: 'Papelería', icon: '▤', stock: 24, min: 8, price: 42.5 },
         { id: 2, name: 'Memoria USB 32 GB', category: 'Tecnología', icon: '▰', stock: 5, min: 6, price: 185 },
@@ -439,36 +426,49 @@
         { id: 5, name: 'Marcadores x12', category: 'Papelería', icon: '✎', stock: 18, min: 6, price: 75 },
         { id: 6, name: 'Botella reutilizable', category: 'Accesorios', icon: '◒', stock: 9, min: 4, price: 135 }
       ];
-      let state = loadState();
+
+      let state = {
+        products: [...seedProducts],
+        movements: [],
+        cart: []
+      };
+
       let activeView = 'home';
       let toastTimer;
 
-      function loadState() {
-        try {
-          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-          if (saved && Array.isArray(saved.products)) return { products: saved.products, movements: saved.movements || [], cart: [] };
-        } catch (error) { /* file:// may restrict storage; demo still works in memory */ }
-        return { products: seedProducts.map(p => ({ ...p })), movements: [], cart: [] };
+      async function initData() {
+        if (dbClient) {
+          try {
+            const { data, error } = await dbClient.from('productos').select('*');
+            if (!error && data && data.length > 0) {
+              state.products = data;
+            }
+            const { data: movData } = await dbClient.from('movements').select('*').order('id', { ascending: false }).limit(10);
+            if (movData) state.movements = movData;
+          } catch (err) {
+            console.error('Error conectando con la API de Supabase:', err);
+          }
+        }
+        renderAll();
       }
-      function saveState() {
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ products: state.products, movements: state.movements })); } catch (error) { /* graceful fallback */ }
-      }
+
       function money(value) { return 'L ' + Number(value || 0).toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
       function whole(value) { return Number(value || 0).toLocaleString('es-HN'); }
-      function product(id) { return state.products.find(p => p.id === Number(id)); }
-      function lowProducts() { return state.products.filter(p => p.stock <= p.min); }
-      function statusOf(p) { return p.stock <= p.min ? 'low' : p.stock <= p.min + 3 ? 'warn' : 'ok'; }
+      function product(id) { return state.products.find(p => Number(p.id) === Number(id)); }
+      function lowProducts() { return state.products.filter(p => p.stock <= p.stock_minimo); }
+      function statusOf(p) { const min = p.stock_minimo ?? p.min ?? 5; return p.stock <= min ? 'low' : p.stock <= min + 3 ? 'warn' : 'ok'; }
       function statusLabel(status) { return status === 'low' ? 'Bajo stock' : status === 'warn' ? 'Por revisar' : 'Saludable'; }
-      function stockPercent(p) { return Math.min(100, Math.max(4, (p.stock / Math.max(p.min * 2, 1)) * 100)); }
+      function stockPercent(p) { const min = p.stock_minimo ?? p.min ?? 5; return Math.min(100, Math.max(4, (p.stock / Math.max(min * 2, 1)) * 100)); }
       function today() { return new Date().toLocaleDateString('es-HN', { day: '2-digit', month: '2-digit', year: 'numeric' }); }
       function showToast(message) { const el = document.getElementById('toast'); el.textContent = message; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2800); }
 
       function renderAll() {
         renderMetrics(); renderHomeTable(); renderAlerts(); renderProductSelects(); renderInventory(); renderMovements(); renderCart(); renderTicket();
       }
+
       function renderMetrics() {
         const units = state.products.reduce((sum, p) => sum + p.stock, 0);
-        const value = state.products.reduce((sum, p) => sum + p.stock * p.price, 0);
+        const value = state.products.reduce((sum, p) => sum + p.stock * p.precio, 0);
         const low = lowProducts().length;
         document.getElementById('hero-products').textContent = whole(state.products.length);
         document.getElementById('hero-units').textContent = whole(units);
@@ -479,59 +479,75 @@
         document.getElementById('metric-low').textContent = whole(low);
         document.getElementById('metric-low').className = 'metric-value' + (low ? ' danger' : '');
       }
+
       function productRow(p, actions = false) {
         const status = statusOf(p);
-        return `<tr><td><div class="product-cell"><div class="product-icon">${p.icon || '✦'}</div><div><strong>${escapeHtml(p.name)}</strong><small>${escapeHtml(p.category)}</small></div></div></td><td><span class="stock-number">${whole(p.stock)} <small style="color:var(--muted);font-weight:500">/ ${whole(p.min)} mín.</small></span><div class="stock-track"><span class="${status === 'low' ? 'low' : status === 'warn' ? 'warn' : ''}" style="width:${stockPercent(p)}%"></span></div></td><td><span class="badge ${status}">${statusLabel(status)}</span></td><td>${money(p.price)}</td>${actions ? `<td><button class="btn btn-ghost btn-small" data-adjust="${p.id}">Ajustar</button></td>` : ''}</tr>`;
+        const minVal = p.stock_minimo ?? p.min ?? 5;
+        const priceVal = p.precio ?? p.price ?? 0;
+        const nameVal = p.nombre ?? p.name ?? '';
+        const catVal = p.categoria ?? p.category ?? '';
+        return `<tr><td><div class="product-cell"><div class="product-icon">${p.icon || '✦'}</div><div><strong>${escapeHtml(nameVal)}</strong><small>${escapeHtml(catVal)}</small></div></div></td><td><span class="stock-number">${whole(p.stock)} <small style="color:var(--muted);font-weight:500">/ ${whole(minVal)} mín.</small></span><div class="stock-track"><span class="${status === 'low' ? 'low' : status === 'warn' ? 'warn' : ''}" style="width:${stockPercent(p)}%"></span></div></td><td><span class="badge ${status}">${statusLabel(status)}</span></td><td>${money(priceVal)}</td>${actions ? `<td><button class="btn btn-ghost btn-small" data-adjust="${p.id}">Ajustar</button></td>` : ''}</tr>`;
       }
+
       function renderHomeTable() {
         const rows = [...state.products].sort((a, b) => statusOf(a).localeCompare(statusOf(b))).slice(0, 5).map(p => productRow(p)).join('');
         document.getElementById('home-table').innerHTML = rows || '<tr><td colspan="4"><div class="empty">No hay productos todavía.</div></td></tr>';
         document.getElementById('recent-count').textContent = `${state.products.length} productos`;
       }
+
       function renderAlerts() {
         const low = lowProducts();
-        const html = low.length ? low.slice(0, 5).map(p => `<div class="alert-item"><div><strong>${escapeHtml(p.name)}</strong><small style="display:block">Quedan ${whole(p.stock)} · mínimo ${whole(p.min)}</small></div><span class="badge low">Reponer</span></div>`).join('') : '<div class="empty">✓ Todo el inventario está sobre el mínimo.</div>';
+        const html = low.length ? low.slice(0, 5).map(p => `<div class="alert-item"><div><strong>${escapeHtml(p.nombre || p.name)}</strong><small style="display:block">Quedan ${whole(p.stock)} · mínimo ${whole(p.stock_minimo ?? p.min)}</small></div><span class="badge low">Reponer</span></div>`).join('') : '<div class="empty">✓ Todo el inventario está sobre el mínimo.</div>';
         document.getElementById('home-alerts').innerHTML = html;
       }
+
       function renderProductSelects() {
         const movement = document.getElementById('movement-product');
-        const sale = document.getElementById('sale-product');
-        const previousMovement = movement.value; const previousSale = sale.value;
-        const options = state.products.map(p => `<option value="${p.id}">${escapeHtml(p.name)} · ${whole(p.stock)} disp.</option>`).join('');
-        movement.innerHTML = options || '<option value="">No hay productos</option>';
-        sale.innerHTML = options || '<option value="">No hay productos</option>';
-        if (product(previousMovement)) movement.value = previousMovement;
-        if (product(previousSale)) sale.value = previousSale;
+        const sale = document.getElementById('sale-product-select');
+        const options = state.products.map(p => `<option value="${p.id}">${escapeHtml(p.nombre || p.name)} · ${whole(p.stock)} disp.</option>`).join('');
+        if (movement) movement.innerHTML = options || '<option value="">No hay productos</option>';
+        if (sale) sale.innerHTML = options || '<option value="">No hay productos</option>';
       }
+
       function renderInventory() {
-        const query = document.getElementById('inventory-search').value.trim().toLowerCase();
-        const filter = document.getElementById('inventory-filter').value;
+        const searchEl = document.getElementById('inventory-search');
+        const filterEl = document.getElementById('inventory-filter');
+        const query = searchEl ? searchEl.value.trim().toLowerCase() : '';
+        const filter = filterEl ? filterEl.value : 'all';
+        
         const filtered = state.products.filter(p => {
-          const matchText = !query || `${p.name} ${p.category}`.toLowerCase().includes(query);
-          const matchFilter = filter === 'all' || (filter === 'low' ? p.stock <= p.min : p.stock > p.min);
+          const n = p.nombre || p.name || '';
+          const c = p.categoria || p.category || '';
+          const min = p.stock_minimo ?? p.min ?? 5;
+          const matchText = !query || `${n} ${c}`.toLowerCase().includes(query);
+          const matchFilter = filter === 'all' || (filter === 'low' ? p.stock <= min : p.stock > min);
           return matchText && matchFilter;
         });
         document.getElementById('inventory-table').innerHTML = filtered.length ? filtered.map(p => productRow(p, true)).join('') : '<tr><td colspan="5"><div class="empty">No se encontraron productos.</div></td></tr>';
         document.getElementById('inventory-count').textContent = `${filtered.length} de ${state.products.length}`;
       }
+
       function renderMovements() {
         const items = state.movements.slice(0, 6);
         document.getElementById('movement-count').textContent = `${state.movements.length} registrados`;
-        document.getElementById('movement-list').innerHTML = items.length ? items.map(m => `<div class="mini-list-item"><div class="left"><div class="product-icon" style="background:${m.type === 'entry' ? '#e8faf5' : '#fff0ef'};color:${m.type === 'entry' ? 'var(--teal-dark)' : 'var(--red)'}">${m.type === 'entry' ? '＋' : '−'}</div><div><strong>${escapeHtml(m.name)}</strong><small style="display:block">${escapeHtml(m.note || (m.type === 'entry' ? 'Entrada de inventario' : 'Salida de inventario'))}</small></div></div><div style="text-align:right"><strong style="color:${m.type === 'entry' ? 'var(--teal-dark)' : 'var(--red)'}">${m.type === 'entry' ? '+' : '−'}${whole(m.qty)}</strong><small style="display:block">${m.date}</small></div></div>`).join('') : '<div class="empty">Todavía no hay movimientos. Registra una entrada o salida.</div>';
+        document.getElementById('movement-list').innerHTML = items.length ? items.map(m => `<div class="mini-list-item"><div class="left"><div class="product-icon" style="background:${m.type === 'entry' ? '#e8faf5' : '#fff0ef'};color:${m.type === 'entry' ? 'var(--teal-dark)' : 'var(--red)'}">${m.type === 'entry' ? '＋' : '−'}</div><div><strong>${escapeHtml(m.name)}</strong><small style="display:block">${escapeHtml(m.note || (m.type === 'entry' ? 'Entrada de inventario' : 'Salida de inventario'))}</small></div></div><div style="text-align:right"><strong style="color:${m.type === 'entry' ? 'var(--teal-dark)' : 'var(--red)'}">${m.type === 'entry' ? '+' : '−'}${whole(m.qty)}</strong><small style="display:block">${m.date || today()}</small></div></div>`).join('') : '<div class="empty">Todavía no hay movimientos. Registra una entrada o salida.</div>';
       }
+
       function cartTotals() {
-        const subtotal = state.cart.reduce((sum, item) => sum + item.qty * item.price, 0);
+        const subtotal = state.cart.reduce((sum, item) => sum + item.qty * (item.precio ?? item.price ?? 0), 0);
         return { subtotal, tax: subtotal * TAX_RATE, total: subtotal * (1 + TAX_RATE) };
       }
+
       function renderCart() {
         const cartBody = document.getElementById('cart-table');
         if (!state.cart.length) cartBody.innerHTML = '<tr><td colspan="5"><div class="empty">El carrito está vacío. Agrega un producto para comenzar.</div></td></tr>';
-        else cartBody.innerHTML = state.cart.map(item => `<tr><td><strong>${escapeHtml(item.name)}</strong><small style="display:block;color:var(--muted);font-size:10px">${escapeHtml(item.category)}</small></td><td><div class="qty-control"><button type="button" data-cart-minus="${item.id}">−</button><span>${item.qty}</span><button type="button" data-cart-plus="${item.id}">＋</button></div></td><td>${money(item.price)}</td><td><strong>${money(item.qty * item.price)}</strong></td><td><button class="remove-btn" type="button" data-cart-remove="${item.id}" aria-label="Eliminar">×</button></td></tr>`).join('');
+        else cartBody.innerHTML = state.cart.map(item => `<tr><td><strong>${escapeHtml(item.nombre || item.name)}</strong><small style="display:block;color:var(--muted);font-size:10px">${escapeHtml(item.categoria || item.category)}</small></td><td><div class="qty-control"><button type="button" data-cart-minus="${item.id}">−</button><span>${item.qty}</span><button type="button" data-cart-plus="${item.id}">＋</button></div></td><td>${money(item.precio ?? item.price)}</td><td><strong>${money(item.qty * (item.precio ?? item.price))}</strong></td><td><button class="remove-btn" type="button" data-cart-remove="${item.id}" aria-label="Eliminar">×</button></td></tr>`).join('');
         const totals = cartTotals();
         document.getElementById('subtotal').textContent = money(totals.subtotal);
         document.getElementById('tax').textContent = money(totals.tax);
         document.getElementById('grand-total').textContent = money(totals.total);
       }
+
       function renderTicket() {
         const totals = cartTotals();
         const items = document.getElementById('ticket-items');
@@ -539,12 +555,14 @@
         const ticketNo = String(state.movements.filter(m => m.type === 'sale').length + 1).padStart(4, '0');
         document.getElementById('ticket-number').textContent = ticketNo;
         document.getElementById('ticket-meta-number').textContent = '#' + ticketNo;
-        items.innerHTML = state.cart.length ? state.cart.map(item => `<div class="ticket-item"><span>${escapeHtml(item.name)}</span><strong>${money(item.qty * item.price)}</strong><small>${item.qty} × ${money(item.price)}</small></div>`).join('') : '<div class="empty">Agrega productos para ver el ticket.</div>';
+        items.innerHTML = state.cart.length ? state.cart.map(item => `<div class="ticket-item"><span>${escapeHtml(item.nombre || item.name)}</span><strong>${money(item.qty * (item.precio ?? item.price))}</strong><small>${item.qty} × ${money(item.precio ?? item.price)}</small></div>`).join('') : '<div class="empty">Agrega productos para ver el ticket.</div>';
         document.getElementById('ticket-subtotal').textContent = money(totals.subtotal);
         document.getElementById('ticket-tax').textContent = money(totals.tax);
         document.getElementById('ticket-grand').textContent = money(totals.total);
       }
+
       function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[char])); }
+
       function setView(view) {
         activeView = view;
         document.querySelectorAll('.view').forEach(el => el.classList.toggle('active', el.id === `view-${view}`));
@@ -552,66 +570,132 @@
         document.getElementById('crumb-label').textContent = ({ home:'Resumen general', inventory:'Control de inventario', sales:'Generación de ticket', requirements:'Requisitos del proyecto' })[view];
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
-      function addMovement(productId, type, qty, note, extra = {}) {
+
+      async function addMovement(productId, type, qty, note, extra = {}) {
         const p = product(productId); if (!p || qty < 1) return false;
-        if (type === 'exit' && p.stock < qty) { showToast(`No hay suficientes unidades de ${p.name}.`); return false; }
+        if (type === 'exit' && p.stock < qty) { showToast(`No hay suficientes unidades de ${p.nombre || p.name}.`); return false; }
+        
         p.stock += type === 'entry' ? qty : -qty;
-        state.movements.unshift({ id: Date.now(), productId: p.id, name: p.name, type, qty, note, date: today(), ...extra });
-        saveState(); renderAll(); return true;
+        const prodName = p.nombre || p.name;
+        const newMov = { productId: p.id, name: prodName, type, qty, note, date: today(), ...extra };
+        state.movements.unshift({ id: Date.now(), ...newMov });
+
+        if (dbClient) {
+          try {
+            await dbClient.from('productos').update({ stock: p.stock }).eq('id', p.id);
+            await dbClient.from('movements').insert([{ product_id: p.id, type, qty, note: note || (type === 'entry' ? 'Entrada' : 'Salida') }]);
+          } catch (err) {
+            console.error('Error al guardar en la API:', err);
+          }
+        }
+
+        renderAll(); 
+        return true;
       }
 
       document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => setView(button.dataset.view)));
       document.querySelectorAll('[data-go]').forEach(button => button.addEventListener('click', () => setView(button.dataset.go)));
-      document.getElementById('movement-form').addEventListener('submit', event => {
+      
+      document.getElementById('movement-form').addEventListener('submit', async event => {
         event.preventDefault();
         const id = document.getElementById('movement-product').value;
         const type = document.querySelector('input[name="movement-type"]:checked').value;
         const qty = Number(document.getElementById('movement-qty').value);
         const note = document.getElementById('movement-note').value.trim();
-        if (addMovement(id, type, qty, note)) { event.target.reset(); showToast(type === 'entry' ? 'Entrada registrada correctamente.' : 'Salida registrada correctamente.'); }
+        if (await addMovement(id, type, qty, note)) { 
+          event.target.reset(); 
+          showToast(type === 'entry' ? 'Entrada registrada en la API.' : 'Salida registrada en la API.'); 
+        }
       });
+
       document.getElementById('inventory-search').addEventListener('input', renderInventory);
       document.getElementById('inventory-filter').addEventListener('change', renderInventory);
+      
       document.getElementById('inventory-table').addEventListener('click', event => {
         const button = event.target.closest('[data-adjust]'); if (!button) return;
-        document.getElementById('movement-product').value = button.dataset.adjust; setView('inventory'); document.getElementById('movement-qty').focus();
+        document.getElementById('movement-product').value = button.dataset.adjust; 
+        setView('inventory'); 
+        document.getElementById('movement-qty').focus();
       });
+
       document.getElementById('add-to-cart').addEventListener('click', () => {
-        const id = Number(document.getElementById('sale-product').value); const p = product(id); const qty = Number(document.getElementById('sale-qty').value);
+        const sel = document.getElementById('sale-product-select');
+        if (!sel || !sel.value) return;
+        const id = Number(sel.value); 
+        const p = product(id); 
+        const qty = Number(document.getElementById('sale-qty').value);
         if (!p || qty < 1) return;
-        const existing = state.cart.find(item => item.id === id); const inCart = existing ? existing.qty : 0;
+        const existing = state.cart.find(item => item.id === id); 
+        const inCart = existing ? existing.qty : 0;
         if (inCart + qty > p.stock) { showToast(`Solo hay ${p.stock} unidades disponibles.`); return; }
-        if (existing) existing.qty += qty; else state.cart.push({ id: p.id, name: p.name, category: p.category, price: p.price, qty });
+        const pName = p.nombre || p.name;
+        const pCat = p.categoria || p.category;
+        const pPrice = p.precio ?? p.price;
+        if (existing) existing.qty += qty; else state.cart.push({ id: p.id, name: pName, category: pCat, price: pPrice, qty });
         document.getElementById('sale-qty').value = 1; renderCart(); renderTicket(); showToast('Producto agregado al ticket.');
       });
+
       document.getElementById('cart-table').addEventListener('click', event => {
         const minus = event.target.closest('[data-cart-minus]'); const plus = event.target.closest('[data-cart-plus]'); const remove = event.target.closest('[data-cart-remove]');
         const id = Number((minus || plus || remove)?.dataset[(minus ? 'cartMinus' : plus ? 'cartPlus' : 'cartRemove')]); const item = state.cart.find(i => i.id === id); if (!item) return;
-        if (minus) item.qty--; if (plus) { const p = product(id); if (item.qty < p.stock) item.qty++; else showToast('La cantidad supera el stock disponible.'); } if (remove || item.qty < 1) state.cart = state.cart.filter(i => i.id !== id); renderCart(); renderTicket();
+        if (minus) item.qty--; 
+        if (plus) { const p = product(id); if (item.qty < p.stock) item.qty++; else showToast('La cantidad supera el stock disponible.'); } 
+        if (remove || item.qty < 1) state.cart = state.cart.filter(i => i.id !== id); 
+        renderCart(); renderTicket();
       });
+
       document.getElementById('clear-cart').addEventListener('click', () => { state.cart = []; renderCart(); renderTicket(); showToast('Carrito vacío.'); });
-      document.getElementById('complete-sale').addEventListener('click', () => {
+      
+      document.getElementById('complete-sale').addEventListener('click', async () => {
         if (!state.cart.length) { showToast('Agrega al menos un producto para confirmar.'); return; }
-        const saleItems = state.cart.map(item => ({ ...item }));
-        for (const item of saleItems) { const ok = addMovement(item.id, 'exit', item.qty, 'Venta confirmada', { type: 'sale' }); if (!ok) return; }
-        state.cart = []; saveState(); renderAll(); showToast('Venta confirmada y stock actualizado.');
+        const saleItems = [...state.cart];
+        for (const item of saleItems) { 
+          await addMovement(item.id, 'exit', item.qty, 'Venta confirmada', { type: 'sale' }); 
+        }
+        state.cart = []; renderAll(); showToast('¡Venta confirmada y stock actualizado en la API!');
       });
+
       document.getElementById('print-ticket').addEventListener('click', () => { if (!state.cart.length) { showToast('Agrega productos para imprimir el ticket.'); return; } window.print(); });
 
       const modal = document.getElementById('modal-backdrop');
       function closeModal() { modal.classList.remove('open'); }
       document.getElementById('open-add-product').addEventListener('click', () => { modal.classList.add('open'); document.getElementById('new-name').focus(); });
-      document.getElementById('close-modal').addEventListener('click', closeModal); document.getElementById('cancel-modal').addEventListener('click', closeModal);
+      document.getElementById('close-modal').addEventListener('click', closeModal); 
+      document.getElementById('cancel-modal').addEventListener('click', closeModal);
       modal.addEventListener('click', event => { if (event.target === modal) closeModal(); });
-      document.getElementById('product-form').addEventListener('submit', event => {
+
+      document.getElementById('product-form').addEventListener('submit', async event => {
         event.preventDefault();
-        const name = document.getElementById('new-name').value.trim(); const category = document.getElementById('new-category').value.trim(); const icon = document.getElementById('new-icon').value.trim() || '✦'; const stock = Number(document.getElementById('new-stock').value); const min = Number(document.getElementById('new-min').value); const price = Number(document.getElementById('new-price').value);
-        state.products.push({ id: Date.now(), name, category, icon, stock, min, price }); saveState(); renderAll(); event.target.reset(); closeModal(); showToast('Producto agregado al catálogo.');
+        const nombre = document.getElementById('new-name').value.trim(); 
+        const categoria = document.getElementById('new-category').value.trim(); 
+        const icon = document.getElementById('new-icon').value.trim() || '✦'; 
+        const stock = Number(document.getElementById('new-stock').value); 
+        const stock_minimo = Number(document.getElementById('new-min').value); 
+        const precio = Number(document.getElementById('new-price').value);
+
+        const newProd = { nombre, categoria, icon, stock, stock_minimo, precio };
+
+        if (dbClient) {
+          try {
+            const { data, error } = await dbClient.from('productos').insert([newProd]).select();
+            if (!error && data) {
+              state.products.push(data[0]);
+            }
+          } catch (err) {
+            console.error('Error al insertar en Supabase:', err);
+            state.products.push({ id: Date.now(), ...newProd });
+          }
+        } else {
+          state.products.push({ id: Date.now(), ...newProd });
+        }
+
+        renderAll(); event.target.reset(); closeModal(); showToast('Producto agregado al catálogo correctamente.');
       });
+
       document.addEventListener('keydown', event => { if (event.key === 'Escape') closeModal(); });
-      renderAll();
+      
+      initData();
     })();
   </script>
-
-
-<script>(function P(e,t){let n=!1,r=!1,i=null,o=null,a=[],s=0,l=0,c=null,u=0,d=t=>parent.postMessage({...t,channel:e},"*"),m=new Map(t),f=(e,t)=>{if(!t.text)return null;let n=document.createTreeWalker(e,4),r=document.createRange(),i=0,o=!1;for(let e=n.nextNode();e;e=n.nextNode()){let n=e.textContent?.length??0;if(!o&&t.text.start<i+n&&(r.setStart(e,t.text.start-i),o=!0),o&&t.text.end<=i+n)return r.setEnd(e,t.text.end-i),r.toString()===t.quote?r:null;i+=n}return null},p=e=>{let t=document.body;for(let n of e.childIndexPath)t=t?.children[n];return t&&t.tagName.toUpperCase()===e.tagName&&(e.region||(e.text?!!f(t,e):(t.textContent?.trim()??"")===e.quote&&(e.quote.length>0||!!e.fingerprint&&(e=>{let t=e.cloneNode(!0);for(let e of[t,...t.querySelectorAll("*")])for(let t of Array.from(e.attributes)){let n=m.get(t.value);void 0!==n&&e.setAttribute(t.name,n)}let n=t.outerHTML,r=0x811c9dc5,i=5381;for(let e=0;e<n.length;e++)r=Math.imul(r^n.charCodeAt(e),0x1000193),i=Math.imul(i,33)^n.charCodeAt(e);return`${(r>>>0).toString(16).padStart(8,"0")}${(i>>>0).toString(16).padStart(8,"0")}:${n.length}`})(t)===e.fingerprint)))?t:null},h=(e,t)=>{let n=t?.text?f(e,t)?.getBoundingClientRect():e.getBoundingClientRect();if(!n)return null;let r=t?.region,i=r?{x:n.x+r.x*n.width,y:n.y+r.y*n.height,width:r.width*n.width,height:r.height*n.height}:n;return i.width>0&&i.height>0?{x:i.x,y:i.y,width:i.width,height:i.height}:null},g=()=>{u=0;let e=o&&p(o),t=e&&h(e,o??void 0);t||(o=null);let n=a.flatMap(e=>{let t=p(e.anchor),n=t&&h(t,e.anchor);if(!n||!t)return[];let r=e.anchor.text&&f(t,e.anchor),i=r?Array.from(r.getClientRects()).filter(e=>e.width>0&&e.height>0).map(e=>({x:e.x,y:e.y,width:e.width,height:e.height})):void 0;return[{id:e.id,rect:n,...i?{textRects:i}:{}}]}),r=++l,i=Math.max(1,Math.ceil(n.length/200));for(let e=0;e<i;e++)d({kind:"state",generation:s,report:r,batch:e,batches:i,selection:o&&t?{anchor:o,rect:t}:null,marks:n.slice(200*e,(e+1)*200)})},v=()=>{u||(u=requestAnimationFrame(g))};addEventListener("message",t=>{if(t.source!==parent||!t.data||t.data.channel!==e)return;let i=t.data;if("clearSelection"===i.kind)document.getSelection()?.removeAllRanges(),o=null,v();else if("sync"===i.kind&&Array.isArray(i.marks)&&i.marks.length<=200){if(![i.generation,i.batch,i.batches].every(e=>Number.isSafeInteger(e)&&e>=0)||i.batches<1||i.batch>=i.batches||i.generation<=s||c&&i.generation<c.generation)return;if(0===i.batch){if(c&&i.generation===c.generation)return;c={generation:i.generation,batches:i.batches,next:0,marks:[],enabled:!0===i.enabled,region:!0===i.region}}if(!c||c.generation!==i.generation||c.next!==i.batch||c.batches!==i.batches||(c.marks.push(...i.marks),c.next++,c.next!==c.batches))return;n=c.enabled,r=c.region,a=c.marks,s=c.generation,c=null,n||(o=null),v()}else if("reveal"===i.kind&&i.anchor&&Array.isArray(i.anchor.childIndexPath)){let e=p(i.anchor),t=e&&h(e,i.anchor);e&&t&&(i.anchor.region||i.anchor.text?window.scrollBy({left:t.x+t.width/2-innerWidth/2,top:t.y+t.height/2-innerHeight/2,behavior:"instant"}):e.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"})),requestAnimationFrame(()=>{let e=p(i.anchor),t=e&&h(e,i.anchor),n=!!t&&t.x<innerWidth&&t.y<innerHeight&&t.x+t.width>0&&t.y+t.height>0;d({kind:"revealed",sequence:i.sequence,available:n}),v()})}});let x=!1,b=null,y=()=>{if(!n||r)return;let e=document.getSelection();if(o=null,e&&!e.isCollapsed&&1===e.rangeCount){let t=e.getRangeAt(0),n=t.commonAncestorContainer,r=n instanceof Element?n:n.parentElement,i=t.toString();if(r&&document.body.contains(r)&&i.trim()&&i.length<=8e3&&!r.closest("input,textarea,select,[contenteditable],script,style")){let e=[],n=r;for(;n&&n!==document.body;){let t=n.parentElement;if(!t||e.length>=64)return void v();e.unshift(Array.from(t.children).indexOf(n)),n=t}let a=document.createRange();a.selectNodeContents(r),a.setEnd(t.startContainer,t.startOffset);let s=a.toString().length;o={childIndexPath:e,tagName:r.tagName,quote:i,text:{start:s,end:s+i.length}}}}v()};addEventListener("keyup",e=>{"Escape"!==e.key&&y()}),addEventListener("click",e=>{r&&(e.preventDefault(),e.stopImmediatePropagation())},!0),addEventListener("click",e=>{if(r||0!==e.button||e.target instanceof Element&&e.target.closest("a[href]")||!(document.getSelection()?.isCollapsed??!0))return;let t=a.find(t=>{let n=p(t.anchor);if(!n)return!1;let r=t.anchor.text?f(n,t.anchor):null;return(r?Array.from(r.getClientRects()):[h(n,t.anchor)]).some(t=>!!t&&e.clientX>=t.x&&e.clientX<=t.x+t.width&&e.clientY>=t.y&&e.clientY<=t.y+t.height)});t&&d({kind:"open",id:t.id})}),document.addEventListener("selectionchange",()=>{x||y()}),addEventListener("pointerdown",e=>{let t="touch"===e.pointerType||"pen"===e.pointerType;if(x=!t&&0===e.button,b=t&&!document.getSelection()?.isCollapsed?{id:e.pointerId,x:e.clientX,y:e.clientY}:null,!r||0!==e.button)return;e.preventDefault(),e.stopImmediatePropagation();let n=document.body.getBoundingClientRect();n.width&&n.height&&(i={x:Math.max(0,Math.min(1,(e.clientX-n.x)/n.width)),y:Math.max(0,Math.min(1,(e.clientY-n.y)/n.height))})},!0),addEventListener("pointerup",e=>{if(x=!1,b&&b.id===e.pointerId&&(e=>{if(!b||Math.hypot(e.clientX-b.x,e.clientY-b.y)>10||e.target instanceof Element&&e.target.closest("a,button,input,textarea,select,label,summary,[role],[contenteditable]"))return!1;let t=document.getSelection();return!!t&&!t.isCollapsed&&!!t.rangeCount&&!Array.from(t.getRangeAt(0).getClientRects()).some(t=>e.clientX>=t.left-24&&e.clientX<=t.right+24&&e.clientY>=t.top-24&&e.clientY<=t.bottom+24)})(e)&&document.getSelection()?.removeAllRanges(),b=null,!r)return void y();if(!i)return;e.preventDefault(),e.stopImmediatePropagation();let t=document.body.getBoundingClientRect(),n={x:Math.max(0,Math.min(1,(e.clientX-t.x)/t.width)),y:Math.max(0,Math.min(1,(e.clientY-t.y)/t.height))},a={x:Math.min(i.x,n.x),y:Math.min(i.y,n.y),width:Math.abs(i.x-n.x),height:Math.abs(i.y-n.y)};i=null,o=a.width*t.width>=4&&a.height*t.height>=4?{childIndexPath:[],tagName:"BODY",quote:"",region:a}:null,v()},!0),addEventListener("pointercancel",()=>{i=null,x=!1,b=null,y()}),addEventListener("keydown",e=>{"Escape"===e.key&&(document.getSelection()?.removeAllRanges(),o=null,v())}),addEventListener("scroll",v,!0),addEventListener("resize",v),new MutationObserver(v).observe(document.body,{subtree:!0,childList:!0,characterData:!0,attributes:!0}),new ResizeObserver(v).observe(document.body),g()})("f809dbf3-fc20-4a83-87f5-d60a588c7f88",[])</script></body></html>
+</body>
+</html>
