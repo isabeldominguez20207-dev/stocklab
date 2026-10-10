@@ -280,6 +280,23 @@
       .ticket-preview .card-title { display: none; }
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+  const SUPABASE_URL =
+    'https://prkomkknucjjniewrund.supabase.co';
+
+  const SUPABASE_ANON_KEY =
+    'Project Settings → API Keys';
+
+  const supabaseClient =
+    window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY
+       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBya29ta2tudWNqam5pZXdydW5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1Nzc1NDksImV4cCI6MjEwNzE1MzU0OX0.DrNvaPR528yW-Hyv2JtwbseP81-lKeYhMSImCJ7LZxU';
+    );
+</script>
+
 </head>
 <body>
   <div class="app-shell">
