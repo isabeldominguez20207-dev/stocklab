@@ -3,7 +3,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#11233f">
-  <title>StockLab · Inventario y facturación</title>
+  <title>StockLab · Sistema de Inventario y Ventas</title>
   <!-- Librería de Supabase para la API y Backend -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -74,7 +74,7 @@
     .top-actions { display: flex; align-items: center; gap: 13px; }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 5px rgba(22,165,152,.12); }
     .offline-badge { display: flex; align-items: center; gap: 8px; color: var(--teal-dark); background: #e3f7f2; border-radius: 999px; padding: 8px 12px; font-size: 11px; font-weight: 800; }
-    .avatar { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 11px; font-weight: 800; background: #c9564d; }
+    .avatar { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 11px; font-weight: 800; background: #087a73; }
     .content { max-width: 1440px; margin: 0 auto; padding: 42px 48px 72px; }
     .view { display: none; animation: fade .3s ease; }
     .view.active { display: block; }
@@ -111,7 +111,6 @@
     .btn-primary { color: #fff; background: var(--teal-dark); box-shadow: 0 8px 16px rgba(8,122,115,.2); }
     .btn-dark { color: #fff; background: var(--ink); }
     .btn-ghost { color: var(--ink-2); border: 1px solid var(--line); background: #fff; }
-    .btn-small { padding: 8px 10px; font-size: 11px; }
     .dashboard-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
     .metric { display: flex; align-items: start; justify-content: space-between; gap: 12px; min-height: 122px; padding: 19px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 4px 14px rgba(20,35,60,.025); }
     .metric-label { color: var(--muted); font-size: 12px; }
@@ -129,15 +128,12 @@
     .card-title { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 19px; }
     .card-title h3 { margin: 0; }
     .card-title small { color: var(--muted); font-size: 11px; }
-    .table-wrap { overflow-x: auto; }
+    .table-wrap { overflow-x: auto; max-height: 480px; }
     table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    th { text-align: left; padding: 0 11px 12px; border-bottom: 1px solid var(--line); color: #667589; font-weight: 800; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; white-space: nowrap; }
-    td { padding: 14px 11px; border-bottom: 1px solid #edf1f5; vertical-align: middle; white-space: nowrap; }
+    th { position: sticky; top: 0; background: var(--card); z-index: 2; text-align: left; padding: 0 11px 12px; border-bottom: 1px solid var(--line); color: #667589; font-weight: 800; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; white-space: nowrap; }
+    td { padding: 12px 11px; border-bottom: 1px solid #edf1f5; vertical-align: middle; white-space: nowrap; }
     tbody tr:last-child td { border-bottom: 0; }
-    .product-cell { display: flex; align-items: center; gap: 10px; }
-    .product-icon { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; background: #edf7f6; font-size: 16px; }
     .product-cell strong { display: block; font-size: 12px; }
-    .product-cell small { display: block; margin-top: 1px; color: var(--muted); font-size: 10px; }
     .stock-number { font-weight: 850; }
     .stock-track { width: 72px; height: 5px; margin-top: 5px; overflow: hidden; background: #edf1f5; border-radius: 99px; }
     .stock-track span { display: block; height: 100%; border-radius: 99px; background: var(--teal); }
@@ -151,7 +147,7 @@
     .alert-intro { display: flex; gap: 12px; align-items: start; }
     .alert-icon { flex: 0 0 auto; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; background: #fff0c2; }
     .alert-card p { color: #856a35; font-size: 12px; margin: 0; }
-    .alert-list { display: grid; gap: 9px; margin-top: 17px; }
+    .alert-list { display: grid; gap: 9px; margin-top: 17px; max-height: 380px; overflow-y: auto; }
     .alert-item { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding-top: 10px; border-top: 1px dashed #ead99e; font-size: 12px; }
     .alert-item small { color: #a5823a; font-size: 10px; }
     .empty { padding: 24px; text-align: center; color: var(--muted); font-size: 12px; }
@@ -169,7 +165,7 @@
     .inventory-layout { display: grid; grid-template-columns: .68fr 1.32fr; gap: 20px; align-items: start; }
     .search-row { display: flex; gap: 9px; margin-bottom: 16px; }
     .search-row input { flex: 1; }
-    .mini-list { display: grid; gap: 8px; }
+    .mini-list { display: grid; gap: 8px; max-height: 280px; overflow-y: auto; }
     .mini-list-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid #edf1f5; }
     .mini-list-item:last-child { border-bottom: 0; }
     .mini-list-item .left { display: flex; align-items: center; gap: 9px; }
@@ -228,8 +224,13 @@
     .modal p { color: var(--muted); font-size: 12px; }
     .modal-actions { display: flex; justify-content: end; gap: 9px; margin-top: 19px; }
     .footer { display: flex; justify-content: space-between; gap: 15px; color: #8491a0; padding-top: 32px; font-size: 10px; }
+    .annual-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 16px; }
+    .month-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 16px; text-align: center; }
+    .month-card span { display: block; color: var(--muted); font-size: 11px; text-transform: uppercase; font-weight: 800; }
+    .month-card strong { display: block; margin: 6px 0 2px; font-size: 18px; color: var(--ink); }
+    .month-card small { color: var(--teal-dark); font-size: 10px; font-weight: 800; }
     @media (max-width: 1050px) {
-      .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+      .dashboard-grid, .annual-grid { grid-template-columns: repeat(2, 1fr); }
       .two-col, .inventory-layout, .sale-layout { grid-template-columns: 1fr; }
       .ticket-preview { position: static; }
     }
@@ -248,7 +249,7 @@
       .content { padding: 24px 17px 45px; }
       .hero { grid-template-columns: 1fr; padding: 27px 23px; }
       .hero h1 { font-size: 37px; }
-      .hero-stats { grid-template-columns: repeat(2, 1fr); }
+      .hero-stats, .annual-grid { grid-template-columns: repeat(2, 1fr); }
       .section-head, .page-title { align-items: start; flex-direction: column; margin-top: 31px; }
       .dashboard-grid { grid-template-columns: repeat(2, 1fr); gap: 9px; }
       .metric { min-height: 111px; padding: 14px; }
@@ -280,29 +281,30 @@
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-mark">S</div>
-        <div><strong>StockLab</strong><small>Inventario &amp; facturación</small></div>
+        <div><strong>StockLab</strong><small>Inventario &amp; Ventas</small></div>
       </div>
-      <div class="nav-label">Módulos</div>
+      <div class="nav-label">Panel del Dueño</div>
       <nav class="nav" aria-label="Navegación principal">
-        <button class="" data-view="home"><span class="nav-icon">⌂</span>Resumen</button>
-        <button data-view="inventory" class="active"><span class="nav-icon">▦</span>Inventario</button>
-        <button data-view="sales"><span class="nav-icon">▤</span>Facturación</button>
-        <button data-view="requirements"><span class="nav-icon">✓</span>Requisitos</button>
+        <button class="" data-view="home"><span class="nav-icon">⌂</span>Resumen General</button>
+        <button data-view="inventory" class="active"><span class="nav-icon">▦</span>Control de Stock</button>
+        <button data-view="sales"><span class="nav-icon">▤</span>Caja y Facturación</button>
+        <button data-view="annual"><span class="nav-icon">📈</span>Ventas Anuales</button>
+        <button data-view="requirements"><span class="nav-icon">✓</span>Notas del Sistema</button>
       </nav>
       <div class="sidebar-bottom">
         <div class="class-note">
-          <strong>PROYECTO · GRUPO 3</strong>
-          <p>Redes · Programación · Diseño web</p>
+          <strong>ADMINISTRADOR</strong>
+          <p>Control total de inventario y caja</p>
         </div>
       </div>
     </aside>
 
     <main class="main">
       <header class="topbar">
-        <div class="crumb">Proyecto escolar / <strong id="crumb-label">Control de inventario</strong></div>
+        <div class="crumb">Panel de Administración / <strong id="crumb-label">Control de inventario</strong></div>
         <div class="top-actions">
           <div class="offline-badge"><span class="status-dot"></span>Conexión Supabase API</div>
-          <div class="avatar">G3</div>
+          <div class="avatar">AD</div>
         </div>
       </header>
 
@@ -310,98 +312,137 @@
         <section class="view" id="view-home">
           <div class="hero">
             <div class="hero-copy">
-              <div class="hero-tag"><b>●</b> API CONECTADA · PRESENTACIÓN EN CLASE</div>
-              <p class="eyebrow">Programación + diseño web</p>
-              <h1>Controla tu inventario sin perder una venta.</h1>
-              <p class="lede">Una solución sencilla para registrar entradas y salidas, detectar productos con poco stock y emitir un ticket con el total y sus impuestos.</p>
-              <button class="btn btn-primary" data-go="inventory">Explorar inventario →</button>
+              <div class="hero-tag"><b>●</b> PLATAFORMA ACTIVA · CONTROL TOTAL</div>
+              <p class="eyebrow">Gestión de inventario y ventas</p>
+              <h1>Administra tu stock y asegura cada venta sin errores.</h1>
+              <p class="lede">Controla tus entradas para reponer mercancía, revisa alertas de productos agotados y genera facturas con cálculo de impuestos en tiempo real.</p>
+              <button class="btn btn-primary" data-go="inventory">Gestionar inventario →</button>
             </div>
             <div class="hero-right">
               <div class="hero-visual">
-                <span>✦ Panel Conectado</span>
-                <div class="hero-visual-caption"><span>✦ Base de datos</span><b>Sincronizada</b></div>
+                <span>✦ Catálogo Masivo</span>
+                <div class="hero-visual-caption"><span>✦ Base de datos</span><b>+100 Productos</b></div>
               </div>
               <div class="hero-stats">
-                <div class="hero-stat"><span>Productos registrados</span><strong id="hero-products">6</strong><small>catálogo activo</small></div>
-                <div class="hero-stat"><span>Unidades en stock</span><strong id="hero-units">72</strong><small>disponibles ahora</small></div>
-                <div class="hero-stat"><span>Alertas activas</span><strong id="hero-alerts">2</strong><small>revisar pronto</small></div>
-                <div class="hero-stat"><span>Impuesto aplicado</span><strong>15%</strong><small>configuración de ejemplo</small></div>
+                <div class="hero-stat"><span>Productos registrados</span><strong id="hero-products">100</strong><small>catálogo activo</small></div>
+                <div class="hero-stat"><span>Unidades en stock</span><strong id="hero-units">3,450</strong><small>disponibles ahora</small></div>
+                <div class="hero-stat"><span>Alertas activas</span><strong id="hero-alerts">4</strong><small>revisar reposición</small></div>
+                <div class="hero-stat"><span>Impuesto aplicado</span><strong>15%</strong><small>ISV de Ley</small></div>
               </div>
             </div>
           </div>
 
           <div class="section-head">
-            <div><p class="eyebrow">Vista rápida</p><h2>Estado del sistema</h2></div>
-            <p>Datos sincronizados mediante API.</p>
+            <div><p class="eyebrow">Vista rápida</p><h2>Estado actual del negocio</h2></div>
+            <p>Sincronizado con la base de datos central.</p>
           </div>
           <div class="dashboard-grid">
-            <div class="metric"><div><span class="metric-label">Valor del inventario</span><strong class="metric-value" id="metric-value">L 7,850.00</strong><span class="metric-note">precio de venta estimado</span></div><div class="metric-icon">◈</div></div>
+            <div class="metric"><div><span class="metric-label">Valor del inventario</span><strong class="metric-value" id="metric-value">L 184,500.00</strong><span class="metric-note">precio estimado</span></div><div class="metric-icon">◈</div></div>
             <div class="metric"><div><span class="metric-label">Movimientos hoy</span><strong class="metric-value" id="metric-moves">0</strong><span class="metric-note">entradas y salidas</span></div><div class="metric-icon">↕</div></div>
-            <div class="metric"><div><span class="metric-label">Unidades disponibles</span><strong class="metric-value" id="metric-units">72</strong><span class="metric-note">en todos los productos</span></div><div class="metric-icon">▤</div></div>
-            <div class="metric"><div><span class="metric-label">Productos por reponer</span><strong class="metric-value danger" id="metric-low">2</strong><span class="metric-note warning">bajo el mínimo</span></div><div class="metric-icon">!</div></div>
+            <div class="metric"><div><span class="metric-label">Unidades disponibles</span><strong class="metric-value" id="metric-units">3,450</strong><span class="metric-note">en almacén</span></div><div class="metric-icon">▤</div></div>
+            <div class="metric"><div><span class="metric-label">Productos por reponer</span><strong class="metric-value danger" id="metric-low">4</strong><span class="metric-note warning">stock bajo o agotado</span></div><div class="metric-icon">!</div></div>
           </div>
 
-          <div class="section-head"><div><p class="eyebrow">Control del stock</p><h2>Inventario reciente</h2></div><button class="btn btn-ghost" data-go="inventory">Ver inventario completo</button></div>
+          <div class="section-head"><div><p class="eyebrow">Control de stock</p><h2>Inventario reciente</h2></div><button class="btn btn-ghost" data-go="inventory">Ver inventario completo</button></div>
           <div class="two-col">
-            <div class="card card-pad"><div class="card-title"><h3>Productos con movimiento</h3><small id="recent-count">6 productos</small></div><div class="table-wrap"><table><thead><tr><th>Producto</th><th>Stock actual</th><th>Estado</th><th>Precio</th></tr></thead><tbody id="home-table"></tbody></table></div></div>
-            <div class="card card-pad alert-card"><div class="alert-intro"><div class="alert-icon">⚠</div><div><h3>Alerta de bajo inventario</h3><p>Revisa estos productos antes de que se agoten.</p></div></div><div class="alert-list" id="home-alerts"></div></div>
+            <div class="card card-pad"><div class="card-title"><h3>Últimos productos</h3><small id="recent-count">100 productos</small></div><div class="table-wrap"><table><thead><tr><th>Producto</th><th>Marca / Categoría</th><th>Stock actual</th><th>Estado</th><th>Precio</th></tr></thead><tbody id="home-table"></tbody></table></div></div>
+            <div class="card card-pad alert-card"><div class="alert-intro"><div class="alert-icon">⚠</div><div><h3>Alerta de reabastecimiento</h3><p>Registra entradas para reponer estos productos.</p></div></div><div class="alert-list" id="home-alerts"></div></div>
           </div>
         </section>
 
         <section class="view active" id="view-inventory">
-          <div class="page-title"><div><p class="eyebrow">Módulo 01 · control de stock</p><h1>Inventario</h1><p class="lede">Registra entradas y salidas para mantener las existencias actualizadas.</p></div><button class="btn btn-primary" id="open-add-product">＋ Nuevo producto</button></div>
+          <div class="page-title"><div><p class="eyebrow">Módulo 01 · control de stock y reabastecimiento</p><h1>Inventario de Productos</h1><p class="lede">Registra entradas de nueva mercancía o salidas para mantener tu almacén abastecido.</p></div><button class="btn btn-primary" id="open-add-product">＋ Nuevo producto</button></div>
           <div class="inventory-layout">
             <div class="stack">
-              <div class="card form-card"><div class="card-title"><div><h3>Registrar movimiento</h3><small>Actualiza las unidades disponibles</small></div><span class="badge ok">API en vivo</span></div>
+              <div class="card form-card"><div class="card-title"><div><h3>Registrar entrada o salida</h3><small>Agrega más stock al reponer mercancía</small></div><span class="badge ok">API en vivo</span></div>
                 <form id="movement-form">
                   <div class="field"><label>Producto</label><select id="movement-product" required=""></select></div>
-                  <div class="field" style="margin-top:14px"><label>Tipo de movimiento</label><div class="radio-row"><div class="radio-card"><input type="radio" id="entry" name="movement-type" value="entry" checked=""><label for="entry">＋ Entrada</label></div><div class="radio-card"><input type="radio" id="exit" name="movement-type" value="exit"><label for="exit">− Salida</label></div></div></div>
-                  <div class="field" style="margin-top:14px"><label for="movement-qty">Cantidad de unidades</label><input id="movement-qty" type="number" min="1" step="1" value="1" required=""></div>
-                  <div class="field" style="margin-top:14px"><label for="movement-note">Nota (opcional)</label><input id="movement-note" type="text" maxlength="60" placeholder="Ej. compra a proveedor"></div>
-                  <div class="form-actions"><button class="btn btn-primary" type="submit">Guardar movimiento</button><button class="btn btn-ghost" type="reset">Limpiar</button></div>
+                  <div class="field" style="margin-top:14px"><label>Tipo de movimiento</label><div class="radio-row"><div class="radio-card"><input type="radio" id="entry" name="movement-type" value="entry" checked=""><label for="entry">＋ Entrada (Reponer)</label></div><div class="radio-card"><input type="radio" id="exit" name="movement-type" value="exit"><label for="exit">− Salida</label></div></div></div>
+                  <div class="field" style="margin-top:14px"><label for="movement-qty">Cantidad de unidades</label><input id="movement-qty" type="number" min="1" step="1" value="10" required=""></div>
+                  <div class="field" style="margin-top:14px"><label for="movement-note">Nota o Proveedor (opcional)</label><input id="movement-note" type="text" maxlength="60" placeholder="Ej. Compra a proveedor distribuidor"></div>
+                  <div class="form-actions"><button class="btn btn-primary" type="submit">Actualizar stock</button><button class="btn btn-ghost" type="reset">Limpiar</button></div>
                 </form>
               </div>
-              <div class="card card-pad"><div class="card-title"><h3>Últimos movimientos</h3><small id="movement-count">0 registrados</small></div><div class="mini-list" id="movement-list"><div class="empty">Todavía no hay movimientos.</div></div></div>
+              <div class="card card-pad"><div class="card-title"><h3>Historial de movimientos</h3><small id="movement-count">0 registrados</small></div><div class="mini-list" id="movement-list"><div class="empty">Todavía no hay movimientos.</div></div></div>
             </div>
-            <div class="card card-pad"><div class="card-title"><div><h3>Catálogo de productos</h3><small>Consulta, busca y revisa el estado</small></div><span class="badge ok" id="inventory-count">0 de 0</span></div><div class="search-row"><input id="inventory-search" type="search" placeholder="Buscar producto o categoría…"><select id="inventory-filter" style="max-width:140px"><option value="all">Todos</option><option value="low">Bajo stock</option><option value="ok">Stock saludable</option></select></div><div class="table-wrap"><table><thead><tr><th>Producto</th><th>Stock / mínimo</th><th>Estado</th><th>Precio unit.</th><th>Acción</th></tr></thead><tbody id="inventory-table"></tbody></table></div></div>
+            <div class="card card-pad"><div class="card-title"><div><h3>Catálogo completo de productos (+100)</h3><small>Busca y filtra tus artículos</small></div><span class="badge ok" id="inventory-count">0 de 0</span></div><div class="search-row"><input id="inventory-search" type="search" placeholder="Buscar producto, marca o categoría…"><select id="inventory-filter" style="max-width:140px"><option value="all">Todos</option><option value="low">Bajo stock</option><option value="ok">Stock saludable</option></select></div><div class="table-wrap"><table><thead><tr><th>Producto</th><th>Marca / Categoría</th><th>Stock / mínimo</th><th>Estado</th><th>Precio unit.</th></tr></thead><tbody id="inventory-table"></tbody></table></div></div>
           </div>
         </section>
 
         <section class="view" id="view-sales">
-          <div class="page-title"><div><p class="eyebrow">Módulo 02 · generación de ticket</p><h1>Facturación</h1><p class="lede">Agrega productos a la venta, calcula el impuesto y genera un comprobante listo para presentar.</p></div><button class="btn btn-dark" id="print-ticket">▣ Imprimir ticket</button></div>
+          <div class="page-title"><div><p class="eyebrow">Módulo 02 · punto de venta</p><h1>Facturación</h1><p class="lede">Selecciona los productos vendidos, calcula los impuestos y genera la factura lista para imprimir.</p></div><button class="btn btn-dark" id="print-ticket">▣ Imprimir última factura</button></div>
           <div class="sale-layout">
             <div class="card card-pad">
-              <div class="card-title"><div><h3>Nueva venta</h3><small>El stock se descuenta al confirmar</small></div><span class="badge ok">Ticket #<span id="ticket-number">0001</span></span></div>
+              <div class="card-title"><div><h3>Nueva venta</h3><small>El stock se descuenta automáticamente al confirmar</small></div><span class="badge ok">Ticket #<span id="ticket-number">0001</span></span></div>
               <div class="sale-product">
                 <div class="field"><label for="sale-product-select">Producto</label><select id="sale-product-select"></select></div>
                 <div class="field"><label for="sale-qty">Cantidad</label><input id="sale-qty" type="number" min="1" value="1"></div>
                 <button class="btn btn-primary" id="add-to-cart" type="button">Agregar</button>
               </div>
               <div class="table-wrap" style="margin-top:24px"><table class="cart-table"><thead><tr><th>Detalle</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th></tr></thead><tbody id="cart-table"><tr><td colspan="5"><div class="empty">El carrito está vacío. Agrega un producto para comenzar.</div></td></tr></tbody></table></div>
-              <div class="bill-total"><div class="total-line"><span>Subtotal</span><strong id="subtotal">L 0.00</strong></div><div class="total-line"><span>Impuesto (15%)</span><strong id="tax">L 0.00</strong></div><div class="total-line grand"><span>Total a pagar</span><strong id="grand-total">L 0.00</strong></div></div>
-              <div class="form-actions"><button class="btn btn-primary" id="complete-sale" type="button">Confirmar venta</button><button class="btn btn-ghost" id="clear-cart" type="button">Vaciar</button></div>
+              <div class="bill-total"><div class="total-line"><span>Subtotal</span><strong id="subtotal">L 0.00</strong></div><div class="total-line"><span>Impuesto (15% ISV)</span><strong id="tax">L 0.00</strong></div><div class="total-line grand"><span>Total a cobrar</span><strong id="grand-total">L 0.00</strong></div></div>
+              <div class="form-actions"><button class="btn btn-primary" id="complete-sale" type="button">Confirmar venta e imprimir factura</button><button class="btn btn-ghost" id="clear-cart" type="button">Vaciar</button></div>
             </div>
-            <div class="card card-pad ticket-preview"><div class="card-title"><div><h3>Vista previa del ticket</h3><small>Se actualiza automáticamente</small></div><span style="font-size:18px">✦</span></div>
-              <div class="ticket-paper" id="ticket-paper"><div class="ticket-head"><strong>STOCKLAB</strong><small>INVENTARIO &amp; FACTURACIÓN</small><small>Comprobante de venta</small></div><div class="ticket-meta"><span id="ticket-date">09/10/2026</span><span id="ticket-meta-number">#0001</span></div><div class="ticket-items" id="ticket-items"><div class="empty">Agrega productos para ver el ticket.</div></div><div class="ticket-summary"><div><span>Subtotal</span><span id="ticket-subtotal">L 0.00</span></div><div><span>Impuesto 15%</span><span id="ticket-tax">L 0.00</span></div><div class="final"><span>TOTAL</span><span id="ticket-grand">L 0.00</span></div></div><div class="ticket-foot">Gracias por tu compra · Proyecto Grupo 3</div></div>
+            <div class="card card-pad ticket-preview"><div class="card-title"><div><h3>Vista previa de la factura</h3><small>Se actualiza automáticamente</small></div><span style="font-size:18px">✦</span></div>
+              <div class="ticket-paper" id="ticket-paper"><div class="ticket-head"><strong>STOCKLAB</strong><small>SISTEMA DE INVENTARIO Y VENTAS</small><small>Comprobante de venta</small></div><div class="ticket-meta"><span id="ticket-date">13/10/2026</span><span id="ticket-meta-number">#0001</span></div><div class="ticket-items" id="ticket-items"><div class="empty">Agrega productos para ver la factura.</div></div><div class="ticket-summary"><div><span>Subtotal</span><span id="ticket-subtotal">L 0.00</span></div><div><span>Impuesto (15% ISV)</span><span id="ticket-tax">L 0.00</span></div><div class="final"><span>TOTAL A COBRAR</span><span id="ticket-grand">L 0.00</span></div></div><div class="ticket-foot">¡Gracias por su compra! · Control del Dueño</div></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-annual">
+          <div class="page-title">
+            <div>
+              <p class="eyebrow">Módulo 03 · reporte financiero</p>
+              <h1>Ventas anuales</h1>
+              <p class="lede">Previsualización del comportamiento, volumen y facturación acumulada durante todo el año en curso.</p>
+            </div>
+            <span class="badge ok">Año 2026 Activo</span>
+          </div>
+          <div class="card card-pad">
+            <div class="card-title">
+              <h3>Comportamiento de ventas por mes</h3>
+              <small>Proyección y registro histórico</small>
+            </div>
+            <p style="color:var(--muted); font-size:12px; margin-bottom:14px;">Resumen estadístico de transacciones, ingresos netos e impuestos recaudados mes a mes.</p>
+            <div class="annual-grid">
+              <div class="month-card"><span>Enero</span><strong>L 34,250.00</strong><small>134 ventas</small></div>
+              <div class="month-card"><span>Febrero</span><strong>L 36,800.00</strong><small>142 ventas</small></div>
+              <div class="month-card"><span>Marzo</span><strong>L 49,400.00</strong><small>188 ventas</small></div>
+              <div class="month-card"><span>Abril</span><strong>L 45,100.00</strong><small>168 ventas</small></div>
+              <div class="month-card"><span>Mayo</span><strong>L 52,300.00</strong><small>216 ventas</small></div>
+              <div class="month-card"><span>Junio</span><strong>L 50,900.00</strong><small>195 ventas</small></div>
+              <div class="month-card"><span>Julio</span><strong>L 48,500.00</strong><small>175 ventas</small></div>
+              <div class="month-card"><span>Agosto</span><strong>L 64,100.00</strong><small>240 ventas</small></div>
+              <div class="month-card"><span>Septiembre</span><strong>L 51,600.00</strong><small>193 ventas</small></div>
+              <div class="month-card"><span>Octubre (Actual)</span><strong>L 42,400.00</strong><small>129 ventas</small></div>
+              <div class="month-card"><span>Noviembre (Proj.)</span><strong>L 48,000.00</strong><small>Estimado</small></div>
+              <div class="month-card"><span>Diciembre (Proj.)</span><strong>L 78,500.00</strong><small>Estimado</small></div>
             </div>
           </div>
         </section>
 
         <section class="view" id="view-requirements">
-          <div class="page-title"><div><p class="eyebrow">Módulo 03 · propuesta de clase</p><h1>Requisitos del proyecto</h1><p class="lede">La página reúne los puntos escritos en la hoja y los convierte en una demostración navegable.</p></div></div>
-          <div class="req-hero"><div><p class="eyebrow">Flujo principal</p><h2>De la entrada de producto al ticket.</h2><p>El sistema conecta el inventario con la facturación: cada movimiento modifica el stock y cada venta puede generar un comprobante.</p></div><div class="diagram"><div class="diagram-node">Entrada<br>y salida</div><span class="diagram-arrow">→</span><div class="diagram-node">Stock<br>actualizado</div><span class="diagram-arrow">→</span><div class="diagram-node">Ticket<br>con impuesto</div></div></div>
-          <div class="req-grid"><div class="card req-card"><div class="req-number">01</div><div><h3>Control del stock de productos</h3><p>Consulta las existencias, el mínimo recomendado y el valor estimado del catálogo.</p></div></div><div class="card req-card"><div class="req-number">02</div><div><h3>Entrada y salida de inventario</h3><p>Registra unidades que ingresan o salen y conserva un historial de movimientos.</p></div></div><div class="card req-card"><div class="req-number">03</div><div><h3>Alerta de bajo inventario</h3><p>Identifica productos que están en el mínimo o por debajo para facilitar la reposición.</p></div></div><div class="card req-card"><div class="req-number">04</div><div><h3>Ticket de venta</h3><p>Agrega productos al carrito y genera una vista previa del comprobante de venta.</p></div></div><div class="card req-card"><div class="req-number">05</div><div><h3>Total con impuestos</h3><p>Calcula automáticamente subtotal, impuesto del 15% y total final a pagar.</p></div></div><div class="card req-card"><div class="req-number">06</div><div><h3>Trabajo offline/online</h3><p>Conectado a API backend y preparado para despliegue en la nube.</p></div></div></div>
-          <div class="card card-pad" style="margin-top:20px"><div class="card-title"><h3>Datos de presentación</h3><span class="badge ok">Grupo 3</span></div><div class="note"><strong>Área:</strong> Redes · Programación · Diseño web &nbsp; / &nbsp; <strong>Proyecto:</strong> Sistema de inventario y facturación &nbsp; / &nbsp; <strong>Formato:</strong> Aplicación Web API</div></div>
+          <div class="page-title"><div><p class="eyebrow">Módulo 04 · notas del sistema</p><h1>Información de la plataforma</h1><p class="lede">Sistema optimizado para gestión exclusiva del propietario y control absoluto del inventario.</p></div></div>
+          <div class="req-hero"><div><p class="eyebrow">Flujo operativo</p><h2>Del reabastecimiento a la venta.</h2><p>Agrega stock cuando compres mercancía, controla las existencias mediante alertas y factura directamente a tus clientes.</p></div><div class="diagram"><div class="diagram-node">Entrada /<br>Reposición</div><span class="diagram-arrow">→</span><div class="diagram-node">Stock<br>Actualizado</div><span class="diagram-arrow">→</span><div class="diagram-node">Factura<br>Fiscal</div></div></div>
+          <div class="req-grid">
+            <div class="card req-card"><div class="req-number">01</div><div><h3>Catálogo Masivo (+100 ítems)</h3><p>Gran variedad de productos precargados listos para comercializar y gestionar.</p></div></div>
+            <div class="card req-card"><div class="req-number">02</div><div><h3>Reabastecimiento de Stock</h3><p>Registra entradas de mercancía fácilmente para mantener tus productos siempre disponibles.</p></div></div>
+            <div class="card req-card"><div class="req-number">03</div><div><h3>Alertas de Stock Bajo</h3><p>Identifica de inmediato qué productos se están agotando para realizar nuevas compras.</p></div></div>
+            <div class="card req-card"><div class="req-number">04</div><div><h3>Punto de Venta y Facturación</h3><p>Carrito de compras rápido con cálculo automático de totales y comprobante imprimible.</p></div></div>
+            <div class="card req-card"><div class="req-number">05</div><div><h3>Cálculo de ISV (15%)</h3><p>Aplica de forma transparente el impuesto sobre ventas exigido por la ley.</p></div></div>
+            <div class="card req-card"><div class="req-number">06</div><div><h3>Reporte de Ventas Anuales</h3><p>Visualiza el rendimiento financiero desglosado mes a mes durante todo el año.</p></div></div>
+          </div>
+          <div class="card card-pad" style="margin-top:20px"><div class="card-title"><h3>Administración del Propietario</h3><span class="badge ok">Acceso Total</span></div><div class="note"><strong>Plataforma:</strong> StockLab Cloud &nbsp; / &nbsp; <strong>Rol:</strong> Dueño Administrador &nbsp; / &nbsp; <strong>Estado:</strong> Listo para operar</div></div>
         </section>
 
-        <div class="footer"><span>StockLab · Proyecto escolar Grupo 3</span><span>Conectado a base de datos relacional y API.</span></div>
+        <div class="footer"><span>StockLab · Sistema de Inventario y Ventas</span><span>Panel de control exclusivo para el propietario.</span></div>
       </div>
     </main>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <div class="modal"><button class="modal-close" id="close-modal" aria-label="Cerrar">×</button><h2 id="modal-title">Nuevo producto</h2><p>Agrega un producto al catálogo para usarlo en inventario y facturación.</p><form id="product-form"><div class="form-grid"><div class="field full"><label for="new-name">Nombre del producto</label><input id="new-name" required="" placeholder="Ej. Cuaderno profesional"></div><div class="field"><label for="new-category">Categoría</label><input id="new-category" required="" placeholder="Ej. Papelería"></div><div class="field"><label for="new-icon">Ícono</label><input id="new-icon" maxlength="2" value="✦" placeholder="✦"></div><div class="field"><label for="new-stock">Stock inicial</label><input id="new-stock" type="number" min="0" value="0" required=""></div><div class="field"><label for="new-min">Stock mínimo</label><input id="new-min" type="number" min="0" value="5" required=""></div><div class="field full"><label for="new-price">Precio unitario (L)</label><input id="new-price" type="number" min="0" step="0.01" value="10" required=""></div></div><div class="modal-actions"><button class="btn btn-ghost" type="button" id="cancel-modal">Cancelar</button><button class="btn btn-primary" type="submit">Agregar producto</button></div></form></div>
+    <div class="modal"><button class="modal-close" id="close-modal" aria-label="Cerrar">×</button><h2 id="modal-title">Nuevo producto</h2><p>Agrega un nuevo producto al catálogo general de tu negocio.</p><form id="product-form"><div class="form-grid"><div class="field full"><label for="new-name">Nombre del producto</label><input id="new-name" required="" placeholder="Ej. Resma de papel bond"></div><div class="field"><label for="new-brand">Marca</label><input id="new-brand" required="" placeholder="Ej. HP, Sony, Scribe"></div><div class="field"><label for="new-category">Categoría</label><input id="new-category" required="" placeholder="Ej. Tecnología, Papelería"></div><div class="field"><label for="new-stock">Stock inicial</label><input id="new-stock" type="number" min="0" value="25" required=""></div><div class="field"><label for="new-min">Stock mínimo</label><input id="new-min" type="number" min="0" value="5" required=""></div><div class="field full"><label for="new-price">Precio unitario (L)</label><input id="new-price" type="number" min="0" step="0.01" value="150.00" required=""></div></div><div class="modal-actions"><button class="btn btn-ghost" type="button" id="cancel-modal">Cancelar</button><button class="btn btn-primary" type="submit">Guardar producto</button></div></form></div>
   </div>
 
   <script>
@@ -418,17 +459,113 @@
         }
       } catch (e) { console.warn('Supabase no inicializado, usando modo local de respaldo.'); }
 
-      const seedProducts = [
-        { id: 1, name: 'Cuaderno universitario', category: 'Papelería', icon: '▤', stock: 24, min: 8, price: 42.5 },
-        { id: 2, name: 'Memoria USB 32 GB', category: 'Tecnología', icon: '▰', stock: 5, min: 6, price: 185 },
-        { id: 3, name: 'Mouse inalámbrico', category: 'Tecnología', icon: '◉', stock: 13, min: 5, price: 220 },
-        { id: 4, name: 'Audífonos básicos', category: 'Tecnología', icon: '♬', stock: 3, min: 5, price: 160 },
-        { id: 5, name: 'Marcadores x12', category: 'Papelería', icon: '✎', stock: 18, min: 6, price: 75 },
-        { id: 6, name: 'Botella reutilizable', category: 'Accesorios', icon: '◒', stock: 9, min: 4, price: 135 }
+      // Catálogo inicial ampliado a más de 100 productos reales para comercio
+      const baseProducts = [
+        { name: "Cuaderno espiral 100 hjs", brand: "Scribe", category: "Papelería", stock: 120, min: 20, price: 35.00 },
+        { name: "Cuaderno cosido 200 hjs", brand: "Norma", category: "Papelería", stock: 95, min: 15, price: 65.00 },
+        { name: "Memoria USB 32GB", brand: "Kingston", category: "Tecnología", stock: 45, min: 10, price: 180.00 },
+        { name: "Memoria USB 64GB", brand: "Kingston", category: "Tecnología", stock: 30, min: 8, price: 260.00 },
+        { name: "Mouse óptico USB", brand: "Logitech", category: "Tecnología", stock: 50, min: 12, price: 220.00 },
+        { name: "Mouse inalámbrico", brand: "Logitech", category: "Tecnología", stock: 40, min: 10, price: 320.00 },
+        { name: "Teclado multimedia USB", brand: "Genius", category: "Tecnología", stock: 25, min: 5, price: 280.00 },
+        { name: "Audífonos con micrófono", brand: "Sony", category: 'Tecnología', stock: 35, min: 8, price: 350.00 },
+        { name: "Audífonos Bluetooth TWS", brand: "Xiaomi", category: "Tecnología", stock: 20, min: 5, price: 550.00 },
+        { name: "Marcadores permanentes x4", brand: "Sharpie", category: "Papelería", stock: 60, min: 15, price: 95.00 },
+        { name: "Lápices tinta negra caja x12", brand: "BIC", category: "Papelería", stock: 80, min: 20, price: 65.00 },
+        { name: "Lápices tinta azul caja x12", brand: "BIC", category: "Papelería", stock: 85, min: 20, price: 65.00 },
+        { name: "Borradores de nata caja x20", brand: "Pelikan", category: "Papelería", stock: 40, min: 10, price: 50.00 },
+        { name: "Sacapuntas metálico caja x12", brand: "Staedtler", category: "Papelería", stock: 30, min: 8, price: 75.00 },
+        { name: "Tijeras escolares acero", brand: "Maped", category: "Papelería", stock: 50, min: 12, price: 40.00 },
+        { name: "Pegamento en barra 20g", brand: "Uhu", category: "Papelería", stock: 70, min: 15, price: 32.00 },
+        { name: "Resma papel bond Carta 500h", brand: "Chamex", category: "Papelería", stock: 110, min: 25, price: 125.00 },
+        { name: "Resma papel bond Oficio 500h", brand: "Chamex", category: "Papelería", stock: 75, min: 18, price: 145.00 },
+        { name: "Calculadora científica", brand: "Casio", category: "Tecnología", stock: 28, min: 6, price: 420.00 },
+        { name: "Calculadora de bolsillo 8 dígitos", brand: "Casio", category: "Oficina", stock: 35, min: 10, price: 150.00 },
+        { name: "Grapadora mediana metálica", brand: "Bostitch", category: "Oficina", stock: 22, min: 5, price: 180.00 },
+        { name: "Caja de grapas 26/6 x5000", brand: "Rapid", category: "Oficina", stock: 65, min: 15, price: 55.00 },
+        { name: "Perforadora de papel 2 huecos", brand: "El Casco", category: "Oficina", stock: 18, min: 4, price: 210.00 },
+        { name: "Carpetas colgantes caja x25", brand: "Pendaflex", category: "Oficina", stock: 20, min: 5, price: 290.00 },
+        { name: "Sobres manila tamaño oficio x50", brand: "Mead", category: "Oficina", stock: 40, min: 10, price: 110.00 },
+        { name: "Cinta adhesiva transparente 3M", brand: "Scotch", category: "Oficina", stock: 90, min: 20, price: 38.00 },
+        { name: "Cinta de embalaje marrón", brand: "3M", category: "Oficina", stock: 50, min: 12, price: 48.00 },
+        { name: "Corrector líquido lápiz", brand: "Kores", category: "Papelería", stock: 55, min: 15, price: 35.00 },
+        { name: "Notas adhesivas Post-it x4", brand: "3M", category: "Papelería", stock: 70, min: 18, price: 85.00 },
+        { name: "Carpeta archivador lomo ancho", brand: "Lamy", category: "Oficina", stock: 45, min: 10, price: 65.00 },
+        { name: "Mochila ejecutiva impermeable", brand: "Totto", category: "Accesorios", stock: 15, min: 4, price: 750.00 },
+        { name: "Lonchera térmica escolar", brand: "Totto", category: "Accesorios", stock: 18, min: 5, price: 380.00 },
+        { name: "Estuche portalápices lona", brand: "Quiksilver", category: "Accesorios", stock: 40, min: 10, price: 120.00 },
+        { name: "Botella térmica acero 750ml", brand: "Hydro Flask", category: "Accesorios", stock: 25, min: 6, price: 450.00 },
+        { name: "Tarjetero de aluminio", brand: "Secrid", category: "Accesorios", stock: 20, min: 5, price: 320.00 },
+        { name: "Lampara de escritorio LED", brand: "Taotronics", category: "Tecnología", stock: 22, min: 6, price: 480.00 },
+        { name: "Regleta multicontacto 6 tomas", brand: "APC", category: "Tecnología", stock: 30, min: 8, price: 290.00 },
+        { name: "Cable HDMI 2 metros alta velocidad", brand: "Belkin", category: "Tecnología", stock: 45, min: 10, price: 175.00 },
+        { name: "Cable USB Tipo C a Tipo C 1m", brand: "Anker", category: "Tecnología", stock: 55, min: 12, price: 210.00 },
+        { name: "Cargador de pared USB rápido 20W", brand: "Anker", category: "Tecnología", stock: 35, min: 10, price: 350.00 },
+        { name: "Soporte ajustable para laptop", brand: "Nulea", category: "Tecnología", stock: 18, min: 4, price: 520.00 },
+        { name: "Alfombrilla para mouse ergonómica", brand: "Fellowes", category: "Oficina", stock: 38, min: 10, price: 140.00 },
+        { name: "Disco duro externo 1TB USB 3.0", brand: "Western Digital", category: "Tecnología", stock: 12, min: 3, price: 1450.00 },
+        { name: "Estado Sólido SSD 480GB", brand: "Kingston", category: "Tecnología", stock: 20, min: 5, price: 980.00 },
+        { name: "Tinta para impresora Negra L3210", brand: "Epson", category: "Tecnología", stock: 25, min: 6, price: 310.00 },
+        { name: "Tinta para impresora Cian L3210", brand: "Epson", category: "Tecnología", stock: 22, min: 5, price: 310.00 },
+        { name: "Tinta para impresora Magenta L3210", brand: "Epson", category: "Tecnología", stock: 22, min: 5, price: 310.00 },
+        { name: "Tinta para impresora Amarilla L3210", brand: "Epson", category: "Tecnología", stock: 22, min: 5, price: 310.00 },
+        { name: "Papel fotográfico brillante A4 100h", brand: "HP", category: "Papelería", stock: 30, min: 8, price: 250.00 },
+        { name: "Plumones pastel x12", brand: "Stabilo", category: "Papelería", stock: 40, min: 10, price: 180.00 },
+        { name: "Resaltadores neón x6", brand: "Stabilo", category: "Papelería", stock: 65, min: 15, price: 110.00 },
+        { name: "Compás de precisión escolar", brand: "Maped", category: "Papelería", stock: 35, min: 8, price: 90.00 },
+        { name: "Juego geométrico 30cm", brand: "Artesco", category: "Papelería", stock: 50, min: 12, price: 45.00 },
+        { name: "Cartulina blanca pliego x10", brand: "Canson", category: "Papelería", stock: 80, min: 20, price: 70.00 },
+        { name: "Foami variado colores x10", brand: "Norma", category: "Papelería", stock: 60, min: 15, price: 65.00 },
+        { name: "Silicona caliente barras caja x50", brand: "Pattex", category: "Oficina", stock: 30, min: 8, price: 130.00 },
+        { name: "Pistola aplicadora silicona chica", brand: "Stanley", category: "Oficina", stock: 20, min: 5, price: 160.00 },
+        { name: "Cutter profesional metálico", brand: "Olfa", category: "Oficina", stock: 28, min: 7, price: 95.00 },
+        { name: "Repuestos cuchilla cutter caja x10", brand: "Olfa", category: "Oficina", stock: 35, min: 8, price: 75.00 },
+        { name: "Tarjetero de escritorio rotativo", brand: "Durable", category: "Oficina", stock: 12, min: 3, price: 240.00 },
+        { name: "Organizador de escritorio acrílico", brand: "InterDesign", category: "Oficina", stock: 22, min: 5, price: 310.00 },
+        { name: "Papelera metálica malla negra", brand: "Mind Reader", category: "Oficina", stock: 25, min: 6, price: 190.00 },
+        { name: "Silla ergonómica de oficina", brand: "ErgoComfort", category: "Oficina", stock: 8, min: 2, price: 2800.00 },
+        { name: "Kit de limpieza para pantallas", brand: "CleanScreen", category: "Tecnología", stock: 50, min: 12, price: 85.00 },
+        { name: "Soporte de celular para escritorio", brand: "Ugreen", category: "Tecnología", stock: 40, min: 10, price: 150.00 },
+        { name: "Webcam HD 1080p con micrófono", brand: "Logitech", category: "Tecnología", stock: 15, min: 4, price: 890.00 },
+        { name: "Micrófono USB condensador podcast", brand: "HyperX", category: "Tecnología", stock: 10, min: 3, price: 1650.00 },
+        { name: "Router Wi-Fi Gigabit doble banda", brand: "TP-Link", category: "Tecnología", stock: 14, min: 4, price: 950.00 },
+        { name: "Switch Ethernet 8 puertos 10/100", brand: "TP-Link", category: "Tecnología", stock: 18, min: 5, price: 380.00 },
+        { name: "Cable UTP Cat6 bobina 305m", brand: "Panduit", category: "Tecnología", stock: 6, min: 2, price: 3400.00 },
+        { name: "Conectores RJ45 bolsa x100", brand: "AMP", category: "Tecnología", stock: 25, min: 6, price: 280.00 },
+        { name: "Pinza crimpadora para red RJ45", brand: "Truper", category: "Oficina", stock: 12, min: 3, price: 320.00 },
+        { name: "Tester de cables de red UTP", brand: "Fluke", category: "Tecnología", stock: 10, min: 2, price: 450.00 },
+        { name: "Cinta de aislar eléctrica negra", brand: "3M", category: "Oficina", stock: 60, min: 15, price: 30.00 },
+        { name: "Precinto de seguridad plástico x100", brand: "TydenBrooks", category: "Oficina", stock: 30, min: 8, price: 120.00 },
+        { name: "Etiquetadora manual de precios", brand: "MX-5500", category: "Oficina", stock: 15, min: 4, price: 220.00 },
+        { name: "Rollo de etiquetas para etiquetadora x10", brand: "Open", category: "Oficina", stock: 50, min: 12, price: 90.00 },
+        { name: "Baterías alcalinas AA caja x4", brand: "Duracell", category: "Tecnología", stock: 100, min: 25, price: 85.00 },
+        { name: "Baterías alcalinas AAA caja x4", brand: "Duracell", category: "Tecnología", stock: 90, min: 20, price: 85.00 },
+        { name: "Baterías recargables AA x4 con cargador", brand: "Energizer", category: "Tecnología", stock: 15, min: 4, price: 480.00 },
+        { name: "Linterna LED recargable USB", brand: "Maglite", category: "Accesorios", stock: 20, min: 5, price: 390.00 },
+        { name: "Multiplicador tomacorriente 3 vías", brand: "GE", category: "Tecnología", stock: 40, min: 10, price: 95.00 },
+        { name: "Protector de voltaje para refrigeración", brand: "Sola Basic", category: "Tecnología", stock: 12, min: 3, price: 550.00 },
+        { name: "Abanico de pedestal 3 velocidades", brand: "Lasko", category: "Electrodomésticos", stock: 10, min: 2, price: 1250.00 },
+        { name: "Cafetera de goteo 12 tazas", brand: "Black+Decker", category: "Electrodomésticos", stock: 8, min: 2, price: 890.00 },
+        { name: "Microondas 0.7 pies cúbicos", brand: "Mabe", category: "Electrodomésticos", stock: 5, min: 1, price: 2100.00 },
+        { name: "Dispensador de agua de mesa", brand: "Oster", category: "Electrodomésticos", stock: 6, min: 2, price: 1650.00 },
+        { name: "Gel antibacterial galón 3.78L", brand: "Klin", category: "Limpieza", stock: 25, min: 6, price: 250.00 },
+        { name: "Alcohol amilicado 70% 1 Litro", brand: "Farmaplast", category: "Limpieza", stock: 50, min: 12, price: 65.00 },
+        { name: "Toallas húmedas antibacteriales x80", brand: "Huggies", category: "Limpieza", stock: 40, min: 10, price: 55.00 },
+        { name: "Papel toalla para manos rollo x6", brand: "Scott", category: "Limpieza", stock: 35, min: 8, price: 180.00 },
+        { name: "Jabon líquido de manos 500ml", brand: "Protex", category: "Limpieza", stock: 45, min: 10, price: 75.00 },
+        { name: "Escoba cerdas suaves con palo", brand: "Imusa", category: "Limpieza", stock: 20, min: 5, price: 95.00 },
+        { name: "Trapeador de microfibra", brand: "Rubbermaid", category: "Limpieza", stock: 22, min: 5, price: 130.00 },
+        { name: "Desinfectante multiusos 1 Galón", brand: "Lysol", category: "Limpieza", stock: 28, min: 7, price: 220.00 },
+        { name: "Bolsas para basura grandes rollo x30", brand: "Glad", category: "Limpieza", stock: 60, min: 15, price: 115.00 },
+        { name: "Guantes de nitrilo caja x100", brand: "Ansell", category: "Limpieza", stock: 30, min: 8, price: 280.00 },
+        { name: "Mascarillas quirúrgicas caja x50", brand: "Medicom", category: "Limpieza", stock: 70, min: 18, price: 95.00 },
+        { name: "Bloc de dibujo tamaño carta x50", brand: "Canson", category: "Papelería", stock: 35, min: 8, price: 85.00 },
+        { name: "Pinturas acrílicas set x12 colores", brand: "Pentel", category: "Papelería", stock: 25, min: 6, price: 195.00 },
+        { name: "Pinceles finos set x6", brand: "Winsor & Newton", category: "Papelería", stock: 30, min: 8, price: 110.00 }
       ];
 
       let state = {
-        products: [...seedProducts],
+        products: baseProducts.map((p, index) => ({ id: index + 1, ...p })),
         movements: [],
         cart: []
       };
@@ -455,10 +592,10 @@
       function money(value) { return 'L ' + Number(value || 0).toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
       function whole(value) { return Number(value || 0).toLocaleString('es-HN'); }
       function product(id) { return state.products.find(p => Number(p.id) === Number(id)); }
-      function lowProducts() { return state.products.filter(p => p.stock <= p.stock_minimo); }
+      function lowProducts() { return state.products.filter(p => p.stock <= (p.stock_minimo ?? p.min ?? 5)); }
       function statusOf(p) { const min = p.stock_minimo ?? p.min ?? 5; return p.stock <= min ? 'low' : p.stock <= min + 3 ? 'warn' : 'ok'; }
-      function statusLabel(status) { return status === 'low' ? 'Bajo stock' : status === 'warn' ? 'Por revisar' : 'Saludable'; }
-      function stockPercent(p) { const min = p.stock_minimo ?? p.min ?? 5; return Math.min(100, Math.max(4, (p.stock / Math.max(min * 2, 1)) * 100)); }
+      function statusLabel(status) { return status === 'low' ? 'Agotándose / Bajo' : status === 'warn' ? 'Por revisar' : 'Saludable'; }
+      function stockPercent(p) { const min = p.stock_minimo ?? p.min ?? 5; return Math.min(100, Math.max(4, (p.stock / Math.max(min * 3, 1)) * 100)); }
       function today() { return new Date().toLocaleDateString('es-HN', { day: '2-digit', month: '2-digit', year: 'numeric' }); }
       function showToast(message) { const el = document.getElementById('toast'); el.textContent = message; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2800); }
 
@@ -468,7 +605,7 @@
 
       function renderMetrics() {
         const units = state.products.reduce((sum, p) => sum + p.stock, 0);
-        const value = state.products.reduce((sum, p) => sum + p.stock * p.precio, 0);
+        const value = state.products.reduce((sum, p) => sum + p.stock * (p.precio ?? p.price ?? 0), 0);
         const low = lowProducts().length;
         document.getElementById('hero-products').textContent = whole(state.products.length);
         document.getElementById('hero-units').textContent = whole(units);
@@ -480,31 +617,32 @@
         document.getElementById('metric-low').className = 'metric-value' + (low ? ' danger' : '');
       }
 
-      function productRow(p, actions = false) {
+      function productRow(p) {
         const status = statusOf(p);
         const minVal = p.stock_minimo ?? p.min ?? 5;
         const priceVal = p.precio ?? p.price ?? 0;
         const nameVal = p.nombre ?? p.name ?? '';
+        const brandVal = p.marca ?? p.brand ?? 'Sin marca';
         const catVal = p.categoria ?? p.category ?? '';
-        return `<tr><td><div class="product-cell"><div class="product-icon">${p.icon || '✦'}</div><div><strong>${escapeHtml(nameVal)}</strong><small>${escapeHtml(catVal)}</small></div></div></td><td><span class="stock-number">${whole(p.stock)} <small style="color:var(--muted);font-weight:500">/ ${whole(minVal)} mín.</small></span><div class="stock-track"><span class="${status === 'low' ? 'low' : status === 'warn' ? 'warn' : ''}" style="width:${stockPercent(p)}%"></span></div></td><td><span class="badge ${status}">${statusLabel(status)}</span></td><td>${money(priceVal)}</td>${actions ? `<td><button class="btn btn-ghost btn-small" data-adjust="${p.id}">Ajustar</button></td>` : ''}</tr>`;
+        return `<tr><td><div class="product-cell"><div><strong>${escapeHtml(nameVal)}</strong></div></div></td><td><strong style="color:var(--ink-2)">${escapeHtml(brandVal)}</strong><small style="display:block;color:var(--muted)">${escapeHtml(catVal)}</small></td><td><span class="stock-number">${whole(p.stock)} <small style="color:var(--muted);font-weight:500">/ ${whole(minVal)} mín.</small></span><div class="stock-track"><span class="${status === 'low' ? 'low' : status === 'warn' ? 'warn' : ''}" style="width:${stockPercent(p)}%"></span></div></td><td><span class="badge ${status}">${statusLabel(status)}</span></td><td>${money(priceVal)}</td></tr>`;
       }
 
       function renderHomeTable() {
-        const rows = [...state.products].sort((a, b) => statusOf(a).localeCompare(statusOf(b))).slice(0, 5).map(p => productRow(p)).join('');
-        document.getElementById('home-table').innerHTML = rows || '<tr><td colspan="4"><div class="empty">No hay productos todavía.</div></td></tr>';
+        const rows = [...state.products].slice(0, 8).map(p => productRow(p)).join('');
+        document.getElementById('home-table').innerHTML = rows || '<tr><td colspan="5"><div class="empty">No hay productos todavía.</div></td></tr>';
         document.getElementById('recent-count').textContent = `${state.products.length} productos`;
       }
 
       function renderAlerts() {
         const low = lowProducts();
-        const html = low.length ? low.slice(0, 5).map(p => `<div class="alert-item"><div><strong>${escapeHtml(p.nombre || p.name)}</strong><small style="display:block">Quedan ${whole(p.stock)} · mínimo ${whole(p.stock_minimo ?? p.min)}</small></div><span class="badge low">Reponer</span></div>`).join('') : '<div class="empty">✓ Todo el inventario está sobre el mínimo.</div>';
+        const html = low.length ? low.slice(0, 8).map(p => `<div class="alert-item"><div><strong>${escapeHtml(p.nombre || p.name)} (${escapeHtml(p.marca || p.brand || 'G3')})</strong><small style="display:block">Quedan ${whole(p.stock)} · mínimo ${whole(p.stock_minimo ?? p.min)}</small></div><span class="badge low">Reponer stock</span></div>`).join('') : '<div class="empty">✓ Todo el inventario está abastecido.</div>';
         document.getElementById('home-alerts').innerHTML = html;
       }
 
       function renderProductSelects() {
         const movement = document.getElementById('movement-product');
         const sale = document.getElementById('sale-product-select');
-        const options = state.products.map(p => `<option value="${p.id}">${escapeHtml(p.nombre || p.name)} · ${whole(p.stock)} disp.</option>`).join('');
+        const options = state.products.map(p => `<option value="${p.id}">${escapeHtml(p.nombre || p.name)} [${escapeHtml(p.marca || p.brand || 'G3')}] · ${whole(p.stock)} disp.</option>`).join('');
         if (movement) movement.innerHTML = options || '<option value="">No hay productos</option>';
         if (sale) sale.innerHTML = options || '<option value="">No hay productos</option>';
       }
@@ -517,20 +655,21 @@
         
         const filtered = state.products.filter(p => {
           const n = p.nombre || p.name || '';
+          const b = p.marca || p.brand || '';
           const c = p.categoria || p.category || '';
           const min = p.stock_minimo ?? p.min ?? 5;
-          const matchText = !query || `${n} ${c}`.toLowerCase().includes(query);
+          const matchText = !query || `${n} ${b} ${c}`.toLowerCase().includes(query);
           const matchFilter = filter === 'all' || (filter === 'low' ? p.stock <= min : p.stock > min);
           return matchText && matchFilter;
         });
-        document.getElementById('inventory-table').innerHTML = filtered.length ? filtered.map(p => productRow(p, true)).join('') : '<tr><td colspan="5"><div class="empty">No se encontraron productos.</div></td></tr>';
+        document.getElementById('inventory-table').innerHTML = filtered.length ? filtered.map(p => productRow(p)).join('') : '<tr><td colspan="5"><div class="empty">No se encontraron productos.</div></td></tr>';
         document.getElementById('inventory-count').textContent = `${filtered.length} de ${state.products.length}`;
       }
 
       function renderMovements() {
-        const items = state.movements.slice(0, 6);
+        const items = state.movements.slice(0, 8);
         document.getElementById('movement-count').textContent = `${state.movements.length} registrados`;
-        document.getElementById('movement-list').innerHTML = items.length ? items.map(m => `<div class="mini-list-item"><div class="left"><div class="product-icon" style="background:${m.type === 'entry' ? '#e8faf5' : '#fff0ef'};color:${m.type === 'entry' ? 'var(--teal-dark)' : 'var(--red)'}">${m.type === 'entry' ? '＋' : '−'}</div><div><strong>${escapeHtml(m.name)}</strong><small style="display:block">${escapeHtml(m.note || (m.type === 'entry' ? 'Entrada de inventario' : 'Salida de inventario'))}</small></div></div><div style="text-align:right"><strong style="color:${m.type === 'entry' ? 'var(--teal-dark)' : 'var(--red)'}">${m.type === 'entry' ? '+' : '−'}${whole(m.qty)}</strong><small style="display:block">${m.date || today()}</small></div></div>`).join('') : '<div class="empty">Todavía no hay movimientos. Registra una entrada o salida.</div>';
+        document.getElementById('movement-list').innerHTML = items.length ? items.map(m => `<div class="mini-list-item"><div class="left"><div class="product-icon" style="background:${m.type === 'entry' ? '#e8faf5' : '#fff0ef'};color:${m.type === 'entry' ? 'var(--teal-dark)' : 'var(--red)'}">${m.type === 'entry' ? '＋' : '−'}</div><div><strong>${escapeHtml(m.name)}</strong><small style="display:block">${escapeHtml(m.note || (m.type === 'entry' ? 'Entrada / Reabastecimiento' : 'Salida de almacén'))}</small></div></div><div style="text-align:right"><strong style="color:${m.type === 'entry' ? 'var(--teal-dark)' : 'var(--red)'}">${m.type === 'entry' ? '+' : '−'}${whole(m.qty)}</strong><small style="display:block">${m.date || today()}</small></div></div>`).join('') : '<div class="empty">Todavía no hay movimientos. Registra entradas de reabastecimiento.</div>';
       }
 
       function cartTotals() {
@@ -541,7 +680,7 @@
       function renderCart() {
         const cartBody = document.getElementById('cart-table');
         if (!state.cart.length) cartBody.innerHTML = '<tr><td colspan="5"><div class="empty">El carrito está vacío. Agrega un producto para comenzar.</div></td></tr>';
-        else cartBody.innerHTML = state.cart.map(item => `<tr><td><strong>${escapeHtml(item.nombre || item.name)}</strong><small style="display:block;color:var(--muted);font-size:10px">${escapeHtml(item.categoria || item.category)}</small></td><td><div class="qty-control"><button type="button" data-cart-minus="${item.id}">−</button><span>${item.qty}</span><button type="button" data-cart-plus="${item.id}">＋</button></div></td><td>${money(item.precio ?? item.price)}</td><td><strong>${money(item.qty * (item.precio ?? item.price))}</strong></td><td><button class="remove-btn" type="button" data-cart-remove="${item.id}" aria-label="Eliminar">×</button></td></tr>`).join('');
+        else cartBody.innerHTML = state.cart.map(item => `<tr><td><strong>${escapeHtml(item.nombre || item.name)}</strong><small style="display:block;color:var(--muted);font-size:10px">${escapeHtml(item.marca || item.brand || '')} · ${escapeHtml(item.categoria || item.category || '')}</small></td><td><div class="qty-control"><button type="button" data-cart-minus="${item.id}">−</button><span>${item.qty}</span><button type="button" data-cart-plus="${item.id}">＋</button></div></td><td>${money(item.precio ?? item.price)}</td><td><strong>${money(item.qty * (item.precio ?? item.price))}</strong></td><td><button class="remove-btn" type="button" data-cart-remove="${item.id}" aria-label="Eliminar">×</button></td></tr>`).join('');
         const totals = cartTotals();
         document.getElementById('subtotal').textContent = money(totals.subtotal);
         document.getElementById('tax').textContent = money(totals.tax);
@@ -555,7 +694,7 @@
         const ticketNo = String(state.movements.filter(m => m.type === 'sale').length + 1).padStart(4, '0');
         document.getElementById('ticket-number').textContent = ticketNo;
         document.getElementById('ticket-meta-number').textContent = '#' + ticketNo;
-        items.innerHTML = state.cart.length ? state.cart.map(item => `<div class="ticket-item"><span>${escapeHtml(item.nombre || item.name)}</span><strong>${money(item.qty * (item.precio ?? item.price))}</strong><small>${item.qty} × ${money(item.precio ?? item.price)}</small></div>`).join('') : '<div class="empty">Agrega productos para ver el ticket.</div>';
+        items.innerHTML = state.cart.length ? state.cart.map(item => `<div class="ticket-item"><span>${escapeHtml(item.nombre || item.name)} (${escapeHtml(item.marca || item.brand || 'G3')})</span><strong>${money(item.qty * (item.precio ?? item.price))}</strong><small>${item.qty} × ${money(item.precio ?? item.price)}</small></div>`).join('') : '<div class="empty">Agrega productos para ver la factura.</div>';
         document.getElementById('ticket-subtotal').textContent = money(totals.subtotal);
         document.getElementById('ticket-tax').textContent = money(totals.tax);
         document.getElementById('ticket-grand').textContent = money(totals.total);
@@ -567,7 +706,7 @@
         activeView = view;
         document.querySelectorAll('.view').forEach(el => el.classList.toggle('active', el.id === `view-${view}`));
         document.querySelectorAll('.nav button').forEach(el => el.classList.toggle('active', el.dataset.view === view));
-        document.getElementById('crumb-label').textContent = ({ home:'Resumen general', inventory:'Control de inventario', sales:'Generación de ticket', requirements:'Requisitos del proyecto' })[view];
+        document.getElementById('crumb-label').textContent = ({ home:'Resumen general', inventory:'Control de stock', sales:'Caja y facturación', annual:'Ventas anuales', requirements:'Notas del sistema' })[view];
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
 
@@ -604,19 +743,12 @@
         const note = document.getElementById('movement-note').value.trim();
         if (await addMovement(id, type, qty, note)) { 
           event.target.reset(); 
-          showToast(type === 'entry' ? 'Entrada registrada en la API.' : 'Salida registrada en la API.'); 
+          showToast(type === 'entry' ? '¡Stock reabastecido correctamente!' : 'Salida registrada correctamente.'); 
         }
       });
 
       document.getElementById('inventory-search').addEventListener('input', renderInventory);
       document.getElementById('inventory-filter').addEventListener('change', renderInventory);
-      
-      document.getElementById('inventory-table').addEventListener('click', event => {
-        const button = event.target.closest('[data-adjust]'); if (!button) return;
-        document.getElementById('movement-product').value = button.dataset.adjust; 
-        setView('inventory'); 
-        document.getElementById('movement-qty').focus();
-      });
 
       document.getElementById('add-to-cart').addEventListener('click', () => {
         const sel = document.getElementById('sale-product-select');
@@ -627,12 +759,13 @@
         if (!p || qty < 1) return;
         const existing = state.cart.find(item => item.id === id); 
         const inCart = existing ? existing.qty : 0;
-        if (inCart + qty > p.stock) { showToast(`Solo hay ${p.stock} unidades disponibles.`); return; }
+        if (inCart + qty > p.stock) { showToast(`Solo hay ${p.stock} unidades disponibles en almacén.`); return; }
         const pName = p.nombre || p.name;
+        const pBrand = p.marca || p.brand;
         const pCat = p.categoria || p.category;
         const pPrice = p.precio ?? p.price;
-        if (existing) existing.qty += qty; else state.cart.push({ id: p.id, name: pName, category: pCat, price: pPrice, qty });
-        document.getElementById('sale-qty').value = 1; renderCart(); renderTicket(); showToast('Producto agregado al ticket.');
+        if (existing) existing.qty += qty; else state.cart.push({ id: p.id, name: pName, brand: pBrand, category: pCat, price: pPrice, qty });
+        document.getElementById('sale-qty').value = 1; renderCart(); renderTicket(); showToast('Producto agregado a la factura.');
       });
 
       document.getElementById('cart-table').addEventListener('click', event => {
@@ -647,15 +780,16 @@
       document.getElementById('clear-cart').addEventListener('click', () => { state.cart = []; renderCart(); renderTicket(); showToast('Carrito vacío.'); });
       
       document.getElementById('complete-sale').addEventListener('click', async () => {
-        if (!state.cart.length) { showToast('Agrega al menos un producto para confirmar.'); return; }
+        if (!state.cart.length) { showToast('Agrega al menos un producto para confirmar la venta.'); return; }
         const saleItems = [...state.cart];
         for (const item of saleItems) { 
-          await addMovement(item.id, 'exit', item.qty, 'Venta confirmada', { type: 'sale' }); 
+          await addMovement(item.id, 'exit', item.qty, 'Venta a cliente', { type: 'sale' }); 
         }
-        state.cart = []; renderAll(); showToast('¡Venta confirmada y stock actualizado en la API!');
+        showToast('¡Venta confirmada y stock descontado!');
+        setTimeout(() => { window.print(); state.cart = []; renderAll(); }, 300);
       });
 
-      document.getElementById('print-ticket').addEventListener('click', () => { if (!state.cart.length) { showToast('Agrega productos para imprimir el ticket.'); return; } window.print(); });
+      document.getElementById('print-ticket').addEventListener('click', () => { window.print(); });
 
       const modal = document.getElementById('modal-backdrop');
       function closeModal() { modal.classList.remove('open'); }
@@ -667,13 +801,13 @@
       document.getElementById('product-form').addEventListener('submit', async event => {
         event.preventDefault();
         const nombre = document.getElementById('new-name').value.trim(); 
+        const marca = document.getElementById('new-brand').value.trim(); 
         const categoria = document.getElementById('new-category').value.trim(); 
-        const icon = document.getElementById('new-icon').value.trim() || '✦'; 
         const stock = Number(document.getElementById('new-stock').value); 
         const stock_minimo = Number(document.getElementById('new-min').value); 
         const precio = Number(document.getElementById('new-price').value);
 
-        const newProd = { nombre, categoria, icon, stock, stock_minimo, precio };
+        const newProd = { nombre, marca, categoria, stock, stock_minimo, precio };
 
         if (dbClient) {
           try {
@@ -689,7 +823,7 @@
           state.products.push({ id: Date.now(), ...newProd });
         }
 
-        renderAll(); event.target.reset(); closeModal(); showToast('Producto agregado al catálogo correctamente.');
+        renderAll(); event.target.reset(); closeModal(); showToast('¡Nuevo producto agregado al catálogo con éxito!');
       });
 
       document.addEventListener('keydown', event => { if (event.key === 'Escape') closeModal(); });
