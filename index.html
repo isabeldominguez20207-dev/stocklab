@@ -46,7 +46,7 @@
       background: var(--ink);
       overflow-y: auto;
     }
-    .brand { display: flex; align-items: center; gap: 12px; padding: 0 12px 34px; }
+    .brand { display: flex; align-items: center; gap: 12px; padding: 0 12px 24px; }
     .brand-mark {
       width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px;
       background: linear-gradient(135deg, var(--teal), #7fe1c5); color: var(--ink); font-weight: 900; font-size: 20px;
@@ -54,6 +54,8 @@
     }
     .brand strong { display: block; font-size: 17px; letter-spacing: -.02em; }
     .brand small { color: #9caec7; font-size: 11px; display: block; margin-top: 2px; }
+    .team-box { background: rgba(22,165,152,0.12); border: 1px solid rgba(22,165,152,0.3); border-radius: 12px; padding: 10px 12px; margin-bottom: 20px; font-size: 11px; color: #d7e8f2; }
+    .team-box strong { display: block; color: #82ddcb; margin-bottom: 3px; font-size: 12px; }
     .nav-label { padding: 0 13px 9px; color: #93a3b8; text-transform: uppercase; letter-spacing: .14em; font-size: 10px; font-weight: 800; }
     .nav { display: grid; gap: 5px; }
     .nav button {
@@ -64,9 +66,9 @@
     .nav button.active { color: #fff; background: linear-gradient(90deg, rgba(22,165,152,.28), rgba(22,165,152,.08)); box-shadow: inset 3px 0 var(--teal); }
     .nav-icon { width: 18px; text-align: center; font-size: 16px; }
     .sidebar-bottom { margin-top: auto; padding: 18px 12px 0; }
-    .class-note { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1); border-radius: 15px; padding: 14px; }
-    .class-note p { color: #b5c1d1; font-size: 11px; margin: 8px 0 0; }
-    .class-note strong { font-size: 12px; }
+    .class-note { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1); border-radius: 15px; padding: 12px; text-align: right; }
+    .class-note p { color: #b5c1d1; font-size: 10px; margin: 4px 0 0; }
+    .class-note strong { font-size: 11px; color: #82ddcb; }
     .main { width: calc(100% - 265px); margin-left: 265px; }
     .topbar { height: 78px; display: flex; align-items: center; justify-content: space-between; padding: 0 48px; background: rgba(245,248,251,.92); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; backdrop-filter: blur(10px); }
     .crumb { color: var(--muted); font-size: 12px; }
@@ -283,6 +285,16 @@
         <div class="brand-mark">S</div>
         <div><strong>StockLab</strong><small>Inventario &amp; Ventas</small></div>
       </div>
+      
+      <!-- INTEGRANTES Y GRUPO 3 -->
+      <div class="team-box">
+        <strong>Grupo 3</strong>
+        Isabel Fúnez<br>
+        Aarón Membreño<br>
+        Valery Brigitte<br>
+        Alejandra Andrades
+      </div>
+
       <div class="nav-label">Panel del Dueño</div>
       <nav class="nav" aria-label="Navegación principal">
         <button class="" data-view="home"><span class="nav-icon">⌂</span>Resumen General</button>
@@ -293,8 +305,8 @@
       </nav>
       <div class="sidebar-bottom">
         <div class="class-note">
-          <strong>ADMINISTRADOR</strong>
-          <p>Control total de inventario y caja</p>
+          <strong>Clases de:</strong>
+          <p>Programación y Diseño Web</p>
         </div>
       </div>
     </aside>
@@ -304,7 +316,7 @@
         <div class="crumb">Panel de Administración / <strong id="crumb-label">Control de inventario</strong></div>
         <div class="top-actions">
           <div class="offline-badge"><span class="status-dot"></span>Conexión Supabase API</div>
-          <div class="avatar">AD</div>
+          <div class="avatar">IF</div>
         </div>
       </header>
 
@@ -459,7 +471,6 @@
         }
       } catch (e) { console.warn('Supabase no inicializado, usando modo local de respaldo.'); }
 
-      // Catálogo inicial ampliado a más de 100 productos reales para comercio
       const baseProducts = [
         { name: "Cuaderno espiral 100 hjs", brand: "Scribe", category: "Papelería", stock: 120, min: 20, price: 35.00 },
         { name: "Cuaderno cosido 200 hjs", brand: "Norma", category: "Papelería", stock: 95, min: 15, price: 65.00 },
@@ -706,7 +717,7 @@
         activeView = view;
         document.querySelectorAll('.view').forEach(el => el.classList.toggle('active', el.id === `view-${view}`));
         document.querySelectorAll('.nav button').forEach(el => el.classList.toggle('active', el.dataset.view === view));
-        document.getElementById('crumb-label').textContent = ({ home:'Resumen general', inventory:'Control de stock', sales:'Caja y facturación', annual:'Ventas anuales', requirements:'Notas del sistema' })[view];
+        document.getElementById('crumb-label').textContent = ({ home:'Resumen General', inventory:'Control de stock', sales:'Caja y facturación', annual:'Ventas anuales', requirements:'Notas del sistema' })[view];
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
 
