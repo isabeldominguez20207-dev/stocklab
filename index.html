@@ -128,23 +128,23 @@
     .search-row { display: flex; gap: 9px; margin-bottom: 16px; }
     .search-row input { flex: 1; }
 
-    /* ESTILOS DE TICKET PEQUEÑO Y TÉRMICO */
+    /* ESTILOS DE FACTURA EN PANTALLA */
     .ticket-preview { position: sticky; top: 90px; }
     .ticket-paper {
-      width: 260px; margin: 0 auto; padding: 14px 10px;
-      background: #fff; border: 1px dashed #cbd6e3; border-radius: 8px;
-      font-family: "Courier New", Courier, monospace; font-size: 10px; color: #000;
+      width: 100%; max-width: 320px; margin: 0 auto; padding: 20px;
+      background: #fff; border: 1px solid var(--line); border-radius: 12px;
+      font-family: "Courier New", Courier, monospace; font-size: 12px; color: #000;
       box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
-    .ticket-head { text-align: center; border-bottom: 1px dashed #aebdcb; padding-bottom: 8px; margin-bottom: 8px; }
-    .ticket-head strong { display: block; font-size: 12px; }
-    .ticket-meta { display: flex; justify-content: space-between; color: #555; font-size: 9px; margin-bottom: 8px; }
-    .ticket-items { display: grid; gap: 4px; min-height: 40px; }
-    .ticket-item { display: grid; grid-template-columns: 1fr auto; gap: 4px; font-size: 9px; }
-    .ticket-summary { border-top: 1px dashed #aebdcb; margin-top: 10px; padding-top: 8px; display: grid; gap: 4px; font-size: 9px; }
+    .ticket-head { text-align: center; border-bottom: 1px dashed #aebdcb; padding-bottom: 10px; margin-bottom: 10px; }
+    .ticket-head strong { display: block; font-size: 15px; }
+    .ticket-meta { display: flex; justify-content: space-between; color: #333; font-size: 11px; margin-bottom: 12px; }
+    .ticket-items { display: grid; gap: 6px; min-height: 50px; }
+    .ticket-item { display: grid; grid-template-columns: 1fr auto; gap: 6px; font-size: 11px; }
+    .ticket-summary { border-top: 1px dashed #aebdcb; margin-top: 14px; padding-top: 10px; display: grid; gap: 6px; font-size: 11px; }
     .ticket-summary div { display: flex; justify-content: space-between; }
-    .ticket-summary .final { font-size: 11px; font-weight: bold; }
-    .ticket-foot { text-align: center; color: #555; font-size: 8px; margin-top: 10px; }
+    .ticket-summary .final { font-size: 14px; font-weight: bold; }
+    .ticket-foot { text-align: center; color: #333; font-size: 10px; margin-top: 14px; }
 
     .caja-box { background: #eef7f6; border: 1px solid #b2dfdb; border-radius: 14px; padding: 16px; margin-bottom: 20px; }
     .caja-box h4 { margin: 0 0 8px; color: var(--teal-dark); font-size: 14px; }
@@ -163,10 +163,25 @@
     }
     .toast.show { transform: translateY(0); opacity: 1; }
 
+    /* ESTILOS DE IMPRESIÓN CORREGIDOS (OCUPA TODA LA PÁGINA) */
     @media print {
       body * { visibility: hidden; }
       #ticket-printable, #ticket-printable * { visibility: visible; }
-      #ticket-printable { position: absolute; left: 0; top: 0; width: 75mm; border: 0; box-shadow: none; padding: 0; margin: 0; }
+      #ticket-printable {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 100% !important;
+        max-width: 500px !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 20px !important;
+        font-size: 14px !important;
+      }
+      .ticket-item { font-size: 13px !important; }
+      .ticket-summary { font-size: 13px !important; }
+      .ticket-summary .final { font-size: 16px !important; }
     }
   </style>
 </head>
@@ -309,9 +324,9 @@
               </div>
             </div>
 
-            <!-- VISTA PREVIA FACTURA PEQUEÑA (TIPO TICKET) -->
+            <!-- VISTA PREVIA FACTURA -->
             <div class="card card-pad ticket-preview">
-              <div class="card-title"><h3>Factura Tique</h3></div>
+              <div class="card-title"><h3>Factura</h3></div>
               <div class="ticket-paper" id="ticket-printable">
                 <div class="ticket-head">
                   <strong>STOCKLAB S.A.</strong>
@@ -334,7 +349,7 @@
                   ¡GRACIAS POR SU COMPRA!<br>ORIGINAL: CLIENTE
                 </div>
               </div>
-              <button class="btn btn-ghost" id="print-ticket" style="width:100%; margin-top:15px;">Imprimir Tique</button>
+              <button class="btn btn-ghost" id="print-ticket" style="width:100%; margin-top:15px;">Imprimir Factura</button>
             </div>
           </div>
         </section>
