@@ -124,25 +124,27 @@
     .form-actions { display: flex; gap: 9px; margin-top: 19px; }
 
     .inventory-layout, .sale-layout { display: grid; grid-template-columns: 1fr 1.3fr; gap: 20px; align-items: start; }
-    .sale-layout { grid-template-columns: 1.2fr .8fr; }
+    .sale-layout { grid-template-columns: 1.3fr 0.7fr; }
     .search-row { display: flex; gap: 9px; margin-bottom: 16px; }
     .search-row input { flex: 1; }
 
+    /* ESTILOS DE TICKET PEQUEÑO Y TÉRMICO */
     .ticket-preview { position: sticky; top: 90px; }
     .ticket-paper {
-      width: 100%; max-width: 320px; margin: 0 auto; padding: 18px 14px;
-      background: #fff; border: 1px dashed #cbd6e3; border-radius: 12px;
-      font-family: "Courier New", Courier, monospace; font-size: 11px; color: #000;
+      width: 260px; margin: 0 auto; padding: 14px 10px;
+      background: #fff; border: 1px dashed #cbd6e3; border-radius: 8px;
+      font-family: "Courier New", Courier, monospace; font-size: 10px; color: #000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
-    .ticket-head { text-align: center; border-bottom: 1px dashed #aebdcb; padding-bottom: 10px; margin-bottom: 10px; }
-    .ticket-head strong { display: block; font-size: 14px; }
-    .ticket-meta { display: flex; justify-content: space-between; color: #555; font-size: 10px; margin-bottom: 10px; }
-    .ticket-items { display: grid; gap: 6px; min-height: 50px; }
-    .ticket-item { display: grid; grid-template-columns: 1fr auto; gap: 4px; }
-    .ticket-summary { border-top: 1px dashed #aebdcb; margin-top: 12px; padding-top: 10px; display: grid; gap: 5px; }
+    .ticket-head { text-align: center; border-bottom: 1px dashed #aebdcb; padding-bottom: 8px; margin-bottom: 8px; }
+    .ticket-head strong { display: block; font-size: 12px; }
+    .ticket-meta { display: flex; justify-content: space-between; color: #555; font-size: 9px; margin-bottom: 8px; }
+    .ticket-items { display: grid; gap: 4px; min-height: 40px; }
+    .ticket-item { display: grid; grid-template-columns: 1fr auto; gap: 4px; font-size: 9px; }
+    .ticket-summary { border-top: 1px dashed #aebdcb; margin-top: 10px; padding-top: 8px; display: grid; gap: 4px; font-size: 9px; }
     .ticket-summary div { display: flex; justify-content: space-between; }
-    .ticket-summary .final { font-size: 13px; font-weight: bold; }
-    .ticket-foot { text-align: center; color: #555; font-size: 9px; margin-top: 12px; }
+    .ticket-summary .final { font-size: 11px; font-weight: bold; }
+    .ticket-foot { text-align: center; color: #555; font-size: 8px; margin-top: 10px; }
 
     .caja-box { background: #eef7f6; border: 1px solid #b2dfdb; border-radius: 14px; padding: 16px; margin-bottom: 20px; }
     .caja-box h4 { margin: 0 0 8px; color: var(--teal-dark); font-size: 14px; }
@@ -164,7 +166,7 @@
     @media print {
       body * { visibility: hidden; }
       #ticket-printable, #ticket-printable * { visibility: visible; }
-      #ticket-printable { position: absolute; left: 0; top: 0; width: 80mm; border: 0; box-shadow: none; }
+      #ticket-printable { position: absolute; left: 0; top: 0; width: 75mm; border: 0; box-shadow: none; padding: 0; margin: 0; }
     }
   </style>
 </head>
@@ -307,8 +309,9 @@
               </div>
             </div>
 
+            <!-- VISTA PREVIA FACTURA PEQUEÑA (TIPO TICKET) -->
             <div class="card card-pad ticket-preview">
-              <div class="card-title"><h3>Vista Previa Factura</h3></div>
+              <div class="card-title"><h3>Factura Tique</h3></div>
               <div class="ticket-paper" id="ticket-printable">
                 <div class="ticket-head">
                   <strong>STOCKLAB S.A.</strong>
@@ -331,7 +334,7 @@
                   ¡GRACIAS POR SU COMPRA!<br>ORIGINAL: CLIENTE
                 </div>
               </div>
-              <button class="btn btn-ghost" id="print-ticket" style="width:100%; margin-top:15px;">Imprimir Factura</button>
+              <button class="btn btn-ghost" id="print-ticket" style="width:100%; margin-top:15px;">Imprimir Tique</button>
             </div>
           </div>
         </section>
@@ -375,7 +378,6 @@
       let currentUserRole = null;
       let efectivoInicialCaja = 500.00;
 
-      // Los 101 productos reales originales
       const baseProducts = [
         { name: "Cuaderno espiral 100 hjs", brand: "Scribe", category: "Papelería", stock: 120, min: 20, price: 35.00 },
         { name: "Cuaderno cosido 200 hjs", brand: "Norma", category: "Papelería", stock: 95, min: 15, price: 65.00 },
