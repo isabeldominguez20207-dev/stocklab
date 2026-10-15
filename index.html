@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="es"><head>
+<html lang="es">
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#11233f">
   <title>StockLab · Sistema de Inventario y Ventas</title>
-  <!-- Librería de Supabase para la API y Backend -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
@@ -19,43 +19,50 @@
       --coral: #f47261;
       --gold: #f3b63f;
       --red: #d9545d;
-      --shadow: 0 16px 40px rgba(20, 35, 60, .08);
       --radius: 20px;
     }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
     body {
-      margin: 0;
-      color: var(--ink);
-      background: var(--bg);
+      margin: 0; color: var(--ink); background: var(--bg);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       line-height: 1.5;
     }
     button, input, select { font: inherit; }
     button { cursor: pointer; }
-    .app-shell { min-height: 100vh; display: flex; }
+    
+    /* LOGIN SCREEN */
+    #login-screen {
+      position: fixed; inset: 0; background: linear-gradient(135deg, #11233f, #087a73);
+      z-index: 1000; display: grid; place-items: center; padding: 20px;
+    }
+    .login-card {
+      background: #fff; width: min(400px, 100%); padding: 35px; border-radius: 24px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3); text-align: center;
+    }
+    .login-card h2 { margin-bottom: 8px; color: var(--ink); font-size: 26px; }
+    .login-card p { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+    .login-card .field { text-align: left; margin-bottom: 16px; }
+
+    .app-shell { min-height: 100vh; display: flex; display: none; }
+    .app-shell.logged { display: flex; }
+
     .sidebar {
-      width: 265px;
-      position: fixed;
-      inset: 0 auto 0 0;
-      z-index: 10;
-      display: flex;
-      flex-direction: column;
-      padding: 28px 18px 20px;
-      color: #fff;
-      background: var(--ink);
-      overflow-y: auto;
+      width: 265px; position: fixed; inset: 0 auto 0 0; z-index: 10;
+      display: flex; flex-direction: column; padding: 28px 18px 20px;
+      color: #fff; background: var(--ink); overflow-y: auto;
     }
     .brand { display: flex; align-items: center; gap: 12px; padding: 0 12px 24px; }
     .brand-mark {
       width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px;
       background: linear-gradient(135deg, var(--teal), #7fe1c5); color: var(--ink); font-weight: 900; font-size: 20px;
-      box-shadow: 0 8px 20px rgba(22, 165, 152, .3);
     }
-    .brand strong { display: block; font-size: 17px; letter-spacing: -.02em; }
+    .brand strong { display: block; font-size: 17px; }
     .brand small { color: #9caec7; font-size: 11px; display: block; margin-top: 2px; }
+    
     .team-box { background: rgba(22,165,152,0.12); border: 1px solid rgba(22,165,152,0.3); border-radius: 12px; padding: 10px 12px; margin-bottom: 20px; font-size: 11px; color: #d7e8f2; }
     .team-box strong { display: block; color: #82ddcb; margin-bottom: 3px; font-size: 12px; }
+    
     .nav-label { padding: 0 13px 9px; color: #93a3b8; text-transform: uppercase; letter-spacing: .14em; font-size: 10px; font-weight: 800; }
     .nav { display: grid; gap: 5px; }
     .nav button {
@@ -65,98 +72,50 @@
     .nav button:hover { color: #fff; background: rgba(255,255,255,.08); }
     .nav button.active { color: #fff; background: linear-gradient(90deg, rgba(22,165,152,.28), rgba(22,165,152,.08)); box-shadow: inset 3px 0 var(--teal); }
     .nav-icon { width: 18px; text-align: center; font-size: 16px; }
-    .sidebar-bottom { margin-top: auto; padding: 18px 12px 0; }
-    .class-note { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1); border-radius: 15px; padding: 12px; text-align: right; }
-    .class-note p { color: #b5c1d1; font-size: 10px; margin: 4px 0 0; }
-    .class-note strong { font-size: 11px; color: #82ddcb; }
-    .main { width: calc(100% - 265px); margin-left: 265px; }
+
+    .main { width: calc(100% - 265px); margin-left: 265px; display: flex; flex-direction: column; min-height: 100vh; }
     .topbar { height: 78px; display: flex; align-items: center; justify-content: space-between; padding: 0 48px; background: rgba(245,248,251,.92); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; backdrop-filter: blur(10px); }
     .crumb { color: var(--muted); font-size: 12px; }
     .crumb strong { color: var(--ink); }
     .top-actions { display: flex; align-items: center; gap: 13px; }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 5px rgba(22,165,152,.12); }
     .offline-badge { display: flex; align-items: center; gap: 8px; color: var(--teal-dark); background: #e3f7f2; border-radius: 999px; padding: 8px 12px; font-size: 11px; font-weight: 800; }
     .avatar { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 11px; font-weight: 800; background: #087a73; }
-    .content { max-width: 1440px; margin: 0 auto; padding: 42px 48px 72px; }
+    
+    .content { max-width: 1440px; margin: 0 auto; padding: 42px 48px 72px; width: 100%; flex: 1; }
     .view { display: none; animation: fade .3s ease; }
     .view.active { display: block; }
     @keyframes fade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
     .eyebrow { margin: 0 0 9px; color: var(--teal-dark); text-transform: uppercase; letter-spacing: .14em; font-weight: 850; font-size: 11px; }
     h1, h2, h3, p { margin-top: 0; }
-    h1 { max-width: 730px; margin-bottom: 14px; font-size: clamp(32px, 4vw, 56px); line-height: 1.02; letter-spacing: -.055em; }
-    h2 { margin-bottom: 8px; font-size: 25px; letter-spacing: -.035em; }
-    h3 { margin-bottom: 4px; font-size: 16px; letter-spacing: -.02em; }
-    .lede { max-width: 640px; color: var(--muted); font-size: 16px; }
-    .hero { position: relative; overflow: hidden; display: grid; grid-template-columns: 1.2fr .8fr; gap: 32px; align-items: center; padding: 38px 42px; color: #fff; border-radius: 26px; background: linear-gradient(122deg, #11233f 0%, #173d5e 62%, #0c706d 130%); box-shadow: 0 24px 50px rgba(20,35,60,.14); }
-    .hero:before, .hero:after { content: ""; position: absolute; border-radius: 50%; pointer-events: none; }
-    .hero:before { width: 330px; height: 330px; right: -110px; top: -170px; border: 42px solid rgba(127,225,197,.13); }
-    .hero:after { width: 230px; height: 230px; right: 120px; bottom: -180px; border: 34px solid rgba(244,114,97,.13); }
-    .hero-copy, .hero-stats { position: relative; z-index: 1; }
-    .hero .eyebrow { color: #82ddcb; }
-    .hero h1 { color: #fff; }
-    .hero .lede { color: #bfd0df; }
-    .hero-tag { display: inline-flex; gap: 7px; align-items: center; padding: 7px 10px; border: 1px solid rgba(255,255,255,.15); border-radius: 999px; color: #d7e8f2; font-size: 11px; font-weight: 750; margin-bottom: 20px; background: rgba(255,255,255,.06); }
-    .hero-tag b { color: #82ddcb; }
-    .hero-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .hero-right { position: relative; z-index: 1; display: grid; gap: 12px; }
-    .hero-visual { position: relative; min-height: 190px; overflow: hidden; border: 1px solid rgba(255,255,255,.14); border-radius: 19px; background: rgba(255,255,255,.08); display: grid; place-content: center; text-align: center; color: #82ddcb; font-weight: 800; }
-    .hero-visual-caption { position: absolute; left: 12px; right: 12px; bottom: 11px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border: 1px solid rgba(255,255,255,.16); border-radius: 10px; color: #e9f7f7; background: rgba(17,35,63,.72); backdrop-filter: blur(8px); font-size: 10px; font-weight: 800; }
-    .hero-visual-caption span { color: #82ddcb; }
-    .hero-stat { padding: 16px; min-height: 104px; border: 1px solid rgba(255,255,255,.13); border-radius: 16px; background: rgba(255,255,255,.08); }
-    .hero-stat span { display: block; color: #aec1d2; font-size: 11px; }
-    .hero-stat strong { display: block; margin: 8px 0 3px; font-size: 25px; letter-spacing: -.04em; }
-    .hero-stat small { color: #82ddcb; font-size: 10px; }
-    .section-head { display: flex; justify-content: space-between; gap: 20px; align-items: end; margin: 44px 0 17px; }
-    .section-head p { color: var(--muted); margin: 0; font-size: 13px; }
+    h1 { font-size: clamp(32px, 4vw, 52px); line-height: 1.02; letter-spacing: -.055em; margin-bottom: 12px; }
+    .lede { color: var(--muted); font-size: 15px; max-width: 640px; }
+
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 4px 14px rgba(20,35,60,.025); }
+    .card-pad { padding: 22px; }
+    .card-title { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 19px; }
+    .card-title h3 { margin: 0; font-size: 18px; }
+    
     .btn { border: 0; border-radius: 11px; padding: 11px 15px; font-weight: 800; font-size: 12px; transition: .2s ease; }
     .btn:hover { transform: translateY(-1px); filter: brightness(.98); }
     .btn-primary { color: #fff; background: var(--teal-dark); box-shadow: 0 8px 16px rgba(8,122,115,.2); }
     .btn-dark { color: #fff; background: var(--ink); }
     .btn-ghost { color: var(--ink-2); border: 1px solid var(--line); background: #fff; }
+    
     .dashboard-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-    .metric { display: flex; align-items: start; justify-content: space-between; gap: 12px; min-height: 122px; padding: 19px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 4px 14px rgba(20,35,60,.025); }
-    .metric-label { color: var(--muted); font-size: 12px; }
-    .metric-value { display: block; margin: 9px 0 5px; font-size: 28px; line-height: 1; letter-spacing: -.05em; }
-    .metric-note { color: var(--teal-dark); font-size: 10px; font-weight: 800; }
-    .metric-note.warning { color: #b37712; }
-    .metric-note.danger { color: var(--red); }
+    .metric { display: flex; align-items: start; justify-content: space-between; gap: 12px; min-height: 122px; padding: 19px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); }
+    .metric-value { display: block; margin: 9px 0 5px; font-size: 26px; font-weight: 850; }
     .metric-icon { width: 39px; height: 39px; display: grid; place-items: center; border-radius: 12px; font-size: 17px; background: #e8faf5; }
-    .metric:nth-child(2) .metric-icon { background: #fff1df; }
-    .metric:nth-child(3) .metric-icon { background: #eaf0ff; }
-    .metric:nth-child(4) .metric-icon { background: #fff0ef; }
-    .two-col { display: grid; grid-template-columns: 1.35fr .65fr; gap: 20px; align-items: start; }
-    .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 4px 14px rgba(20,35,60,.025); }
-    .card-pad { padding: 22px; }
-    .card-title { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 19px; }
-    .card-title h3 { margin: 0; }
-    .card-title small { color: var(--muted); font-size: 11px; }
-    .table-wrap { overflow-x: auto; max-height: 480px; }
+
+    .table-wrap { overflow-x: auto; max-height: 450px; }
     table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    th { position: sticky; top: 0; background: var(--card); z-index: 2; text-align: left; padding: 0 11px 12px; border-bottom: 1px solid var(--line); color: #667589; font-weight: 800; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; white-space: nowrap; }
-    td { padding: 12px 11px; border-bottom: 1px solid #edf1f5; vertical-align: middle; white-space: nowrap; }
-    tbody tr:last-child td { border-bottom: 0; }
-    .product-cell strong { display: block; font-size: 12px; }
-    .stock-number { font-weight: 850; }
-    .stock-track { width: 72px; height: 5px; margin-top: 5px; overflow: hidden; background: #edf1f5; border-radius: 99px; }
-    .stock-track span { display: block; height: 100%; border-radius: 99px; background: var(--teal); }
-    .stock-track span.warn { background: var(--gold); }
-    .stock-track span.low { background: var(--red); }
+    th { position: sticky; top: 0; background: var(--card); z-index: 2; text-align: left; padding: 10px 11px; border-bottom: 1px solid var(--line); color: #667589; font-weight: 800; font-size: 10px; text-transform: uppercase; }
+    td { padding: 12px 11px; border-bottom: 1px solid #edf1f5; vertical-align: middle; }
+
     .badge { display: inline-flex; align-items: center; padding: 5px 8px; border-radius: 99px; font-size: 10px; font-weight: 850; }
     .badge.ok { color: var(--teal-dark); background: #e4f7f2; }
-    .badge.warn { color: #9b6a10; background: #fff5d9; }
     .badge.low { color: #ad3d48; background: #ffebed; }
-    .alert-card { border: 1px solid #f5dca1; background: #fffbef; }
-    .alert-intro { display: flex; gap: 12px; align-items: start; }
-    .alert-icon { flex: 0 0 auto; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; background: #fff0c2; }
-    .alert-card p { color: #856a35; font-size: 12px; margin: 0; }
-    .alert-list { display: grid; gap: 9px; margin-top: 17px; max-height: 380px; overflow-y: auto; }
-    .alert-item { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding-top: 10px; border-top: 1px dashed #ead99e; font-size: 12px; }
-    .alert-item small { color: #a5823a; font-size: 10px; }
-    .empty { padding: 24px; text-align: center; color: var(--muted); font-size: 12px; }
-    .page-title { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 28px; }
-    .page-title h1 { margin: 0; font-size: clamp(30px, 4vw, 44px); }
-    .page-title .lede { margin: 8px 0 0; font-size: 14px; }
-    .form-card { padding: 22px; }
+
     .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
     .field { display: grid; gap: 7px; }
     .field.full { grid-column: 1 / -1; }
@@ -164,129 +123,88 @@
     input, select { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; outline: 0; color: var(--ink); background: #fbfcfd; font-size: 12px; }
     input:focus, select:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(22,165,152,.1); }
     .form-actions { display: flex; gap: 9px; margin-top: 19px; }
-    .inventory-layout { display: grid; grid-template-columns: .68fr 1.32fr; gap: 20px; align-items: start; }
+
+    .inventory-layout, .sale-layout { display: grid; grid-template-columns: 1fr 1.3fr; gap: 20px; align-items: start; }
+    .sale-layout { grid-template-columns: 1.2fr .8fr; }
     .search-row { display: flex; gap: 9px; margin-bottom: 16px; }
     .search-row input { flex: 1; }
-    .mini-list { display: grid; gap: 8px; max-height: 280px; overflow-y: auto; }
-    .mini-list-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid #edf1f5; }
-    .mini-list-item:last-child { border-bottom: 0; }
-    .mini-list-item .left { display: flex; align-items: center; gap: 9px; }
-    .mini-list-item small { color: var(--muted); font-size: 10px; }
-    .radio-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .radio-card { position: relative; }
-    .radio-card input { position: absolute; opacity: 0; pointer-events: none; }
-    .radio-card label { display: block; text-align: center; padding: 11px 7px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; color: var(--muted); background: #fff; }
-    .radio-card input:checked + label { color: var(--teal-dark); border-color: var(--teal); background: #edfaf7; }
-    .sale-layout { display: grid; grid-template-columns: 1fr .85fr; gap: 20px; align-items: start; }
-    .sale-product { display: grid; grid-template-columns: 1fr 120px auto; gap: 10px; align-items: end; }
-    .cart-table td { padding: 12px 7px; }
-    .cart-table th { padding-left: 7px; padding-right: 7px; }
-    .qty-control { display: inline-flex; align-items: center; gap: 7px; }
-    .qty-control button { border: 1px solid var(--line); width: 24px; height: 24px; padding: 0; border-radius: 7px; background: #fff; color: var(--ink-2); }
-    .qty-control span { min-width: 12px; text-align: center; font-size: 11px; font-weight: 800; }
-    .remove-btn { border: 0; color: var(--red); background: transparent; font-size: 17px; padding: 3px; }
-    .bill-total { border-top: 1px solid var(--line); margin-top: 15px; padding-top: 14px; display: grid; gap: 8px; }
-    .total-line { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; }
-    .total-line strong { color: var(--ink); }
-    .total-line.grand { margin-top: 4px; color: var(--ink); font-size: 17px; font-weight: 850; }
-    .total-line.grand strong { color: var(--teal-dark); font-size: 21px; }
-    .ticket-preview { position: sticky; top: 100px; }
-    .ticket-paper { padding: 24px 20px; background: #fff; border: 1px dashed #cbd6e3; border-radius: 12px; box-shadow: 0 8px 25px rgba(20,35,60,.06); font-family: "Courier New", monospace; }
-    .ticket-head { text-align: center; border-bottom: 1px dashed #aebdcb; padding-bottom: 13px; margin-bottom: 13px; }
-    .ticket-head strong { display: block; font-size: 16px; letter-spacing: .04em; }
-    .ticket-head small { display: block; color: #718195; font-size: 10px; margin-top: 4px; }
-    .ticket-meta { display: flex; justify-content: space-between; color: #718195; font-size: 10px; margin-bottom: 12px; }
-    .ticket-items { display: grid; gap: 8px; min-height: 60px; }
-    .ticket-item { display: grid; grid-template-columns: 1fr auto; gap: 5px; font-size: 11px; }
-    .ticket-item small { grid-column: 1; color: #718195; font-size: 9px; }
-    .ticket-item strong { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
-    .ticket-summary { border-top: 1px dashed #aebdcb; margin-top: 14px; padding-top: 12px; display: grid; gap: 6px; font-size: 11px; }
+
+    /* TICKET TAMAÑO TÉRMICO / PAPEL AJUSTADO */
+    .ticket-preview { position: sticky; top: 90px; }
+    .ticket-paper {
+      width: 100%; max-width: 320px; margin: 0 auto; padding: 18px 14px;
+      background: #fff; border: 1px dashed #cbd6e3; border-radius: 12px;
+      font-family: "Courier New", Courier, monospace; font-size: 11px; color: #000;
+    }
+    .ticket-head { text-align: center; border-bottom: 1px dashed #aebdcb; padding-bottom: 10px; margin-bottom: 10px; }
+    .ticket-head strong { display: block; font-size: 14px; }
+    .ticket-meta { display: flex; justify-content: space-between; color: #555; font-size: 10px; margin-bottom: 10px; }
+    .ticket-items { display: grid; gap: 6px; min-height: 50px; }
+    .ticket-item { display: grid; grid-template-columns: 1fr auto; gap: 4px; }
+    .ticket-summary { border-top: 1px dashed #aebdcb; margin-top: 12px; padding-top: 10px; display: grid; gap: 5px; }
     .ticket-summary div { display: flex; justify-content: space-between; }
-    .ticket-summary .final { padding-top: 6px; font-size: 14px; font-weight: 900; }
-    .ticket-foot { text-align: center; color: #718195; font-size: 9px; margin-top: 16px; }
-    .req-hero { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 26px; padding: 29px; border-radius: 22px; background: #e7f5f3; }
-    .req-hero p { color: #53736f; font-size: 13px; margin-bottom: 0; }
-    .diagram { display: flex; align-items: center; justify-content: center; gap: 7px; }
-    .diagram-node { width: 88px; height: 88px; display: grid; place-items: center; text-align: center; padding: 8px; border-radius: 50%; background: #fff; border: 7px solid rgba(22,165,152,.16); color: var(--teal-dark); font-weight: 850; font-size: 10px; }
-    .diagram-node:nth-child(3) { border-color: rgba(244,114,97,.22); color: #bb4f43; }
-    .diagram-arrow { color: #75bdb5; font-weight: 900; }
-    .req-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 20px; }
-    .req-card { display: flex; align-items: start; gap: 13px; padding: 20px; }
-    .req-card .req-number { flex: 0 0 auto; display: grid; place-items: center; width: 31px; height: 31px; border-radius: 10px; color: var(--teal-dark); background: #e3f7f2; font-weight: 900; font-size: 12px; }
-    .req-card p { color: var(--muted); margin: 7px 0 0; font-size: 12px; }
-    .stack { display: grid; gap: 20px; }
-    .note { padding: 14px; color: #69778a; background: #f8fafc; border: 1px solid var(--line); border-radius: 12px; font-size: 11px; }
-    .toast { position: fixed; z-index: 30; right: 25px; bottom: 25px; max-width: 300px; color: #fff; background: var(--ink); border-left: 4px solid var(--teal); box-shadow: 0 16px 35px rgba(20,35,60,.25); border-radius: 10px; padding: 13px 15px; transform: translateY(20px); opacity: 0; pointer-events: none; transition: .25s ease; font-size: 12px; }
+    .ticket-summary .final { font-size: 13px; font-weight: bold; }
+    .ticket-foot { text-align: center; color: #555; font-size: 9px; margin-top: 12px; }
+
+    /* CIERRE DE CAJA */
+    .caja-box { background: #eef7f6; border: 1px solid #b2dfdb; border-radius: 14px; padding: 16px; margin-bottom: 20px; }
+    .caja-box h4 { margin: 0 0 8px; color: var(--teal-dark); font-size: 14px; }
+
+    /* FOOTER INSTITUCIONAL */
+    .footer {
+      margin-top: auto; padding: 24px 48px; background: #fff; border-top: 1px solid var(--line);
+      display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--muted);
+    }
+    .footer-team strong { color: var(--teal-dark); }
+
+    .toast {
+      position: fixed; z-index: 2000; right: 25px; bottom: 25px; max-width: 300px;
+      color: #fff; background: var(--ink); border-left: 4px solid var(--teal);
+      border-radius: 10px; padding: 13px 15px; transform: translateY(20px); opacity: 0;
+      pointer-events: none; transition: .25s ease; font-size: 12px;
+    }
     .toast.show { transform: translateY(0); opacity: 1; }
-    .modal-backdrop { position: fixed; inset: 0; z-index: 25; display: none; place-items: center; padding: 20px; background: rgba(12,26,46,.56); }
-    .modal-backdrop.open { display: grid; }
-    .modal { position: relative; width: min(460px, 100%); max-height: 90vh; overflow-y: auto; padding: 24px; background: #fff; border-radius: 18px; box-shadow: 0 24px 70px rgba(0,0,0,.25); }
-    .modal-close { position: absolute; top: 13px; right: 14px; border: 0; color: var(--muted); background: transparent; font-size: 22px; }
-    .modal h2 { padding-right: 24px; }
-    .modal p { color: var(--muted); font-size: 12px; }
-    .modal-actions { display: flex; justify-content: end; gap: 9px; margin-top: 19px; }
-    .footer { display: flex; justify-content: space-between; gap: 15px; color: #8491a0; padding-top: 32px; font-size: 10px; }
-    .annual-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 16px; }
-    .month-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 16px; text-align: center; }
-    .month-card span { display: block; color: var(--muted); font-size: 11px; text-transform: uppercase; font-weight: 800; }
-    .month-card strong { display: block; margin: 6px 0 2px; font-size: 18px; color: var(--ink); }
-    .month-card small { color: var(--teal-dark); font-size: 10px; font-weight: 800; }
-    @media (max-width: 1050px) {
-      .dashboard-grid, .annual-grid { grid-template-columns: repeat(2, 1fr); }
-      .two-col, .inventory-layout, .sale-layout { grid-template-columns: 1fr; }
-      .ticket-preview { position: static; }
-    }
-    @media (max-width: 760px) {
-      .sidebar { width: 100%; height: auto; position: relative; padding: 13px 14px; }
-      .app-shell { display: block; }
-      .brand { padding: 0; }
-      .sidebar-bottom, .nav-label { display: none; }
-      .nav { display: flex; gap: 4px; margin-top: 12px; overflow-x: auto; }
-      .nav button { width: auto; white-space: nowrap; padding: 9px 11px; }
-      .nav button.active { box-shadow: inset 0 -3px var(--teal); }
-      .main { width: 100%; margin-left: 0; }
-      .topbar { height: 57px; padding: 0 17px; }
-      .topbar .crumb { display: none; }
-      .top-actions { margin-left: auto; }
-      .content { padding: 24px 17px 45px; }
-      .hero { grid-template-columns: 1fr; padding: 27px 23px; }
-      .hero h1 { font-size: 37px; }
-      .hero-stats, .annual-grid { grid-template-columns: repeat(2, 1fr); }
-      .section-head, .page-title { align-items: start; flex-direction: column; margin-top: 31px; }
-      .dashboard-grid { grid-template-columns: repeat(2, 1fr); gap: 9px; }
-      .metric { min-height: 111px; padding: 14px; }
-      .metric-value { font-size: 23px; }
-      .metric-icon { width: 32px; height: 32px; font-size: 14px; }
-      .form-grid, .req-grid { grid-template-columns: 1fr; }
-      .field.full { grid-column: auto; }
-      .sale-product { grid-template-columns: 1fr 90px auto; }
-      .req-hero { grid-template-columns: 1fr; padding: 22px; }
-      .diagram-node { width: 76px; height: 76px; }
-      .footer { flex-direction: column; }
-    }
+
+    /* IMPRESIÓN EXCLUSIVA TICKET */
     @media print {
-      body { background: #fff; }
-      .sidebar, .topbar, .page-title, .sale-layout > :first-child, .footer, .toast, .modal-backdrop { display: none !important; }
-      .main { width: 100%; margin: 0; }
-      .content { padding: 0; }
-      .view { display: none !important; }
-      #view-sales { display: block !important; }
-      .ticket-preview { box-shadow: none; }
-      .ticket-paper { width: 80mm; margin: 0 auto; border: 0; box-shadow: none; }
-      .card { border: 0; box-shadow: none; }
-      .ticket-preview .card-title { display: none; }
+      body * { visibility: hidden; }
+      #ticket-printable, #ticket-printable * { visibility: visible; }
+      #ticket-printable { position: absolute; left: 0; top: 0; width: 80mm; border: 0; box-shadow: none; }
     }
   </style>
 </head>
 <body>
-  <div class="app-shell">
+
+  <!-- PANTALLA DE LOGIN -->
+  <div id="login-screen">
+    <div class="login-card">
+      <h2>StockLab Login</h2>
+      <p>Selecciona tu rol de acceso al sistema</p>
+      <form id="login-form">
+        <div class="field">
+          <label>Seleccionar Usuario / Rol</label>
+          <select id="login-role" required>
+            <option value="admin">Administrador (Acceso Total)</option>
+            <option value="vendedor">Vendedor (Solo Caja y Facturación)</option>
+          </select>
+        </div>
+        <div class="field" style="margin-top:14px">
+          <label>Contraseña</label>
+          <input type="password" id="login-pass" placeholder="Ingresa contraseña (cualquiera)" required>
+        </div>
+        <button class="btn btn-primary" type="submit" style="width:100%; margin-top:10px;">Ingresar al Sistema</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="app-shell" id="app-shell">
+    <!-- BARRA LATERAL -->
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-mark">S</div>
         <div><strong>StockLab</strong><small>Inventario &amp; Ventas</small></div>
       </div>
       
-      <!-- INTEGRANTES Y GRUPO 3 -->
       <div class="team-box">
         <strong>Grupo 3</strong>
         Isabel Fúnez<br>
@@ -295,551 +213,435 @@
         Alejandra Andrades
       </div>
 
-      <div class="nav-label">Panel del Dueño</div>
-      <nav class="nav" aria-label="Navegación principal">
-        <button class="" data-view="home"><span class="nav-icon">⌂</span>Resumen General</button>
-        <button data-view="inventory" class="active"><span class="nav-icon">▦</span>Control de Stock</button>
-        <button data-view="sales"><span class="nav-icon">▤</span>Caja y Facturación</button>
-        <button data-view="annual"><span class="nav-icon">📈</span>Ventas Anuales</button>
-        <button data-view="requirements"><span class="nav-icon">✓</span>Notas del Sistema</button>
+      <div class="nav-label">Navegación</div>
+      <nav class="nav" id="sidebar-nav">
+        <button data-view="home" class="admin-only"><span class="nav-icon">⌂</span>Resumen General</button>
+        <button data-view="inventory" class="admin-only"><span class="nav-icon">▦</span>Control de Stock</button>
+        <button data-view="sales" class="active"><span class="nav-icon">▤</span>Caja y Facturación</button>
+        <button data-view="invoices" class="admin-only"><span class="nav-icon">📄</span>Ver Facturas</button>
+        <button data-view="annual" class="admin-only"><span class="nav-icon">📈</span>Ventas Anuales</button>
       </nav>
-      <div class="sidebar-bottom">
-        <div class="class-note">
-          <strong>Clases de:</strong>
-          <p>Programación y Diseño Web</p>
-        </div>
+      
+      <div style="margin-top: auto; padding-top: 15px;">
+        <button class="btn btn-ghost" id="logout-btn" style="width:100%; color:#fff; border-color:rgba(255,255,255,0.2);">Cerrar Sesión</button>
       </div>
     </aside>
 
+    <!-- CONTENIDO PRINCIPAL -->
     <main class="main">
       <header class="topbar">
-        <div class="crumb">Panel de Administración / <strong id="crumb-label">Control de inventario</strong></div>
+        <div class="crumb">Panel de Control / <strong id="crumb-label">Caja y Facturación</strong></div>
         <div class="top-actions">
-          <div class="offline-badge"><span class="status-dot"></span>Conexión Supabase API</div>
-          <div class="avatar">IF</div>
+          <div class="offline-badge"><span class="status-dot" style="width:8px;height:8px;border-radius:50%;background:var(--teal);display:inline-block"></span>Supabase API</div>
+          <div class="avatar" id="user-avatar-initials">V</div>
         </div>
       </header>
 
       <div class="content">
+        <!-- VISTA RESUMEN GENERAL -->
         <section class="view" id="view-home">
-          <div class="hero">
-            <div class="hero-copy">
-              <div class="hero-tag"><b>●</b> PLATAFORMA ACTIVA · CONTROL TOTAL</div>
-              <p class="eyebrow">Gestión de inventario y ventas</p>
-              <h1>Administra tu stock y asegura cada venta sin errores.</h1>
-              <p class="lede">Controla tus entradas para reponer mercancía, revisa alertas de productos agotados y genera facturas con cálculo de impuestos en tiempo real.</p>
-              <button class="btn btn-primary" data-go="inventory">Gestionar inventario →</button>
-            </div>
-            <div class="hero-right">
-              <div class="hero-visual">
-                <span>✦ Catálogo Masivo</span>
-                <div class="hero-visual-caption"><span>✦ Base de datos</span><b>+100 Productos</b></div>
-              </div>
-              <div class="hero-stats">
-                <div class="hero-stat"><span>Productos registrados</span><strong id="hero-products">100</strong><small>catálogo activo</small></div>
-                <div class="hero-stat"><span>Unidades en stock</span><strong id="hero-units">3,450</strong><small>disponibles ahora</small></div>
-                <div class="hero-stat"><span>Alertas activas</span><strong id="hero-alerts">4</strong><small>revisar reposición</small></div>
-                <div class="hero-stat"><span>Impuesto aplicado</span><strong>15%</strong><small>ISV de Ley</small></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="section-head">
-            <div><p class="eyebrow">Vista rápida</p><h2>Estado actual del negocio</h2></div>
-            <p>Sincronizado con la base de datos central.</p>
-          </div>
-          <div class="dashboard-grid">
-            <div class="metric"><div><span class="metric-label">Valor del inventario</span><strong class="metric-value" id="metric-value">L 184,500.00</strong><span class="metric-note">precio estimado</span></div><div class="metric-icon">◈</div></div>
-            <div class="metric"><div><span class="metric-label">Movimientos hoy</span><strong class="metric-value" id="metric-moves">0</strong><span class="metric-note">entradas y salidas</span></div><div class="metric-icon">↕</div></div>
-            <div class="metric"><div><span class="metric-label">Unidades disponibles</span><strong class="metric-value" id="metric-units">3,450</strong><span class="metric-note">en almacén</span></div><div class="metric-icon">▤</div></div>
-            <div class="metric"><div><span class="metric-label">Productos por reponer</span><strong class="metric-value danger" id="metric-low">4</strong><span class="metric-note warning">stock bajo o agotado</span></div><div class="metric-icon">!</div></div>
-          </div>
-
-          <div class="section-head"><div><p class="eyebrow">Control de stock</p><h2>Inventario reciente</h2></div><button class="btn btn-ghost" data-go="inventory">Ver inventario completo</button></div>
-          <div class="two-col">
-            <div class="card card-pad"><div class="card-title"><h3>Últimos productos</h3><small id="recent-count">100 productos</small></div><div class="table-wrap"><table><thead><tr><th>Producto</th><th>Marca / Categoría</th><th>Stock actual</th><th>Estado</th><th>Precio</th></tr></thead><tbody id="home-table"></tbody></table></div></div>
-            <div class="card card-pad alert-card"><div class="alert-intro"><div class="alert-icon">⚠</div><div><h3>Alerta de reabastecimiento</h3><p>Registra entradas para reponer estos productos.</p></div></div><div class="alert-list" id="home-alerts"></div></div>
+          <h1>Resumen General</h1>
+          <p class="lede">Estado actual del inventario y métricas financieras de tu negocio.</p>
+          <div class="dashboard-grid" style="margin-top:24px;">
+            <div class="metric"><div><span class="metric-label">Valor del inventario</span><strong class="metric-value" id="metric-value">L 0.00</strong></div><div class="metric-icon">◈</div></div>
+            <div class="metric"><div><span class="metric-label">Movimientos hoy</span><strong class="metric-value" id="metric-moves">0</strong></div><div class="metric-icon">↕</div></div>
+            <div class="metric"><div><span class="metric-label">Unidades en almacén</span><strong class="metric-value" id="metric-units">0</strong></div><div class="metric-icon">▤</div></div>
+            <div class="metric"><div><span class="metric-label">Productos por reponer</span><strong class="metric-value" id="metric-low" style="color:var(--red)">0</strong></div><div class="metric-icon">!</div></div>
           </div>
         </section>
 
-        <section class="view active" id="view-inventory">
-          <div class="page-title"><div><p class="eyebrow">Módulo 01 · control de stock y reabastecimiento</p><h1>Inventario de Productos</h1><p class="lede">Registra entradas de nueva mercancía o salidas para mantener tu almacén abastecido.</p></div><button class="btn btn-primary" id="open-add-product">＋ Nuevo producto</button></div>
-          <div class="inventory-layout">
-            <div class="stack">
-              <div class="card form-card"><div class="card-title"><div><h3>Registrar entrada o salida</h3><small>Agrega más stock al reponer mercancía</small></div><span class="badge ok">API en vivo</span></div>
-                <form id="movement-form">
-                  <div class="field"><label>Producto</label><select id="movement-product" required=""></select></div>
-                  <div class="field" style="margin-top:14px"><label>Tipo de movimiento</label><div class="radio-row"><div class="radio-card"><input type="radio" id="entry" name="movement-type" value="entry" checked=""><label for="entry">＋ Entrada (Reponer)</label></div><div class="radio-card"><input type="radio" id="exit" name="movement-type" value="exit"><label for="exit">− Salida</label></div></div></div>
-                  <div class="field" style="margin-top:14px"><label for="movement-qty">Cantidad de unidades</label><input id="movement-qty" type="number" min="1" step="1" value="10" required=""></div>
-                  <div class="field" style="margin-top:14px"><label for="movement-note">Nota o Proveedor (opcional)</label><input id="movement-note" type="text" maxlength="60" placeholder="Ej. Compra a proveedor distribuidor"></div>
-                  <div class="form-actions"><button class="btn btn-primary" type="submit">Actualizar stock</button><button class="btn btn-ghost" type="reset">Limpiar</button></div>
-                </form>
-              </div>
-              <div class="card card-pad"><div class="card-title"><h3>Historial de movimientos</h3><small id="movement-count">0 registrados</small></div><div class="mini-list" id="movement-list"><div class="empty">Todavía no hay movimientos.</div></div></div>
-            </div>
-            <div class="card card-pad"><div class="card-title"><div><h3>Catálogo completo de productos (+100)</h3><small>Busca y filtra tus artículos</small></div><span class="badge ok" id="inventory-count">0 de 0</span></div><div class="search-row"><input id="inventory-search" type="search" placeholder="Buscar producto, marca o categoría…"><select id="inventory-filter" style="max-width:140px"><option value="all">Todos</option><option value="low">Bajo stock</option><option value="ok">Stock saludable</option></select></div><div class="table-wrap"><table><thead><tr><th>Producto</th><th>Marca / Categoría</th><th>Stock / mínimo</th><th>Estado</th><th>Precio unit.</th></tr></thead><tbody id="inventory-table"></tbody></table></div></div>
-          </div>
-        </section>
-
-        <section class="view" id="view-sales">
-          <div class="page-title"><div><p class="eyebrow">Módulo 02 · punto de venta</p><h1>Facturación</h1><p class="lede">Selecciona los productos vendidos, calcula los impuestos y genera la factura lista para imprimir.</p></div><button class="btn btn-dark" id="print-ticket">▣ Imprimir última factura</button></div>
-          <div class="sale-layout">
+        <!-- VISTA CONTROL DE STOCK -->
+        <section class="view" id="view-inventory">
+          <h1>Control de Stock</h1>
+          <p class="lede">Gestiona entradas de mercancía con advertencia previa y reabastecimiento.</p>
+          <div class="inventory-layout" style="margin-top:24px;">
             <div class="card card-pad">
-              <div class="card-title"><div><h3>Nueva venta</h3><small>El stock se descuenta automáticamente al confirmar</small></div><span class="badge ok">Ticket #<span id="ticket-number">0001</span></span></div>
-              <div class="sale-product">
-                <div class="field"><label for="sale-product-select">Producto</label><select id="sale-product-select"></select></div>
-                <div class="field"><label for="sale-qty">Cantidad</label><input id="sale-qty" type="number" min="1" value="1"></div>
-                <button class="btn btn-primary" id="add-to-cart" type="button">Agregar</button>
+              <div class="card-title"><h3>Registrar entrada de stock</h3></div>
+              <form id="movement-form">
+                <div class="field"><label>Producto</label><select id="movement-product" required></select></div>
+                <div class="field" style="margin-top:14px"><label>Tipo de movimiento</label>
+                  <select id="movement-type"><option value="entry">Entrada (Reposición)</option><option value="exit">Salida</option></select>
+                </div>
+                <!-- CANTIDAD INICIA EN 0 PARA LIBRE ESCRITURA -->
+                <div class="field" style="margin-top:14px"><label>Cantidad de unidades</label><input id="movement-qty" type="number" min="0" value="0" required></div>
+                <div class="field" style="margin-top:14px"><label>Nota o Proveedor</label><input id="movement-note" type="text" placeholder="Ej. Distribidora S.A."></div>
+                <div class="form-actions"><button class="btn btn-primary" type="submit">Actualizar Stock</button></div>
+              </form>
+            </div>
+            <div class="card card-pad">
+              <div class="card-title"><h3>Catálogo de Productos</h3></div>
+              <div class="search-row"><input id="inventory-search" type="search" placeholder="Buscar producto..."></div>
+              <div class="table-wrap"><table><thead><tr><th>Producto</th><th>Marca</th><th>Stock</th><th>Precio</th></tr></thead><tbody id="inventory-table"></tbody></table></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA CAJA Y FACTURACIÓN -->
+        <section class="view active" id="view-sales">
+          <h1>Caja y Facturación</h1>
+          <p class="lede">Punto de venta con control de efectivo inicial, número correlativo y cierre diario.</p>
+          
+          <div class="caja-box" id="caja-control-box">
+            <h4>Control de Caja Diaria</h4>
+            <div style="display:flex; gap:12px; align-items:end;">
+              <div class="field" style="flex:1;"><label>Efectivo inicial en caja (L)</label><input type="number" id="efectivo-inicial" value="500.00" min="0" step="0.01"></div>
+              <button class="btn btn-primary" type="button" id="btn-abrir-caja">Definir Efectivo</button>
+            </div>
+          </div>
+
+          <div class="sale-layout" style="margin-top:20px;">
+            <div class="card card-pad">
+              <div class="card-title"><h3>Nueva Venta (Correlativo: <span id="current-correlativo">FAC-0001</span>)</h3></div>
+              <div class="field"><label>Seleccionar Producto</label><select id="sale-product-select"></select></div>
+              <div class="field" style="margin-top:12px;"><label>Cantidad</label><input id="sale-qty" type="number" min="1" value="1"></div>
+              <button class="btn btn-primary" id="add-to-cart" type="button" style="margin-top:14px;">Agregar al Carrito</button>
+              
+              <div class="table-wrap" style="margin-top:20px;">
+                <table><thead><tr><th>Producto</th><th>Cant</th><th>Precio</th><th>Total</th><th></th></tr></thead><tbody id="cart-table"><tr><td colspan="5" style="text-align:center; color:var(--muted)">Carrito vacío</td></tr></tbody></table>
               </div>
-              <div class="table-wrap" style="margin-top:24px"><table class="cart-table"><thead><tr><th>Detalle</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th></tr></thead><tbody id="cart-table"><tr><td colspan="5"><div class="empty">El carrito está vacío. Agrega un producto para comenzar.</div></td></tr></tbody></table></div>
-              <div class="bill-total"><div class="total-line"><span>Subtotal</span><strong id="subtotal">L 0.00</strong></div><div class="total-line"><span>Impuesto (15% ISV)</span><strong id="tax">L 0.00</strong></div><div class="total-line grand"><span>Total a cobrar</span><strong id="grand-total">L 0.00</strong></div></div>
-              <div class="form-actions"><button class="btn btn-primary" id="complete-sale" type="button">Confirmar venta e imprimir factura</button><button class="btn btn-ghost" id="clear-cart" type="button">Vaciar</button></div>
+              
+              <div style="margin-top:15px; border-top:1px solid var(--line); padding-top:10px;">
+                <div style="display:flex; justify-content:between;"><span>Subtotal:</span><strong id="cart-subtotal">L 0.00</strong></div>
+                <div style="display:flex; justify-content:between;"><span>ISV (15%):</span><strong id="cart-tax">L 0.00</strong></div>
+                <div style="display:flex; justify-content:between; font-size:16px; margin-top:5px;"><span>Total a Pagar:</span><strong id="cart-total" style="color:var(--teal-dark)">L 0.00</strong></div>
+              </div>
+              
+              <div class="form-actions" style="margin-top:15px;">
+                <button class="btn btn-primary" id="complete-sale" type="button">Confirmar Venta e Imprimir</button>
+              </div>
+
+              <!-- APARTADO DE CIERRE DIARIO -->
+              <div style="margin-top:30px; border-top:2px dashed var(--line); padding-top:15px;">
+                <h4>Cierre Diario de Caja</h4>
+                <p style="font-size:11px; color:var(--muted);">Calcula el efectivo total en caja sumando el fondo inicial y las ventas del día.</p>
+                <button class="btn btn-dark" type="button" id="btn-cierre-diario">Realizar Cierre Diario</button>
+                <div id="cierre-resultado" style="margin-top:10px; font-size:12px; font-weight:bold;"></div>
+              </div>
             </div>
-            <div class="card card-pad ticket-preview"><div class="card-title"><div><h3>Vista previa de la factura</h3><small>Se actualiza automáticamente</small></div><span style="font-size:18px">✦</span></div>
-              <div class="ticket-paper" id="ticket-paper"><div class="ticket-head"><strong>STOCKLAB</strong><small>SISTEMA DE INVENTARIO Y VENTAS</small><small>Comprobante de venta</small></div><div class="ticket-meta"><span id="ticket-date">13/10/2026</span><span id="ticket-meta-number">#0001</span></div><div class="ticket-items" id="ticket-items"><div class="empty">Agrega productos para ver la factura.</div></div><div class="ticket-summary"><div><span>Subtotal</span><span id="ticket-subtotal">L 0.00</span></div><div><span>Impuesto (15% ISV)</span><span id="ticket-tax">L 0.00</span></div><div class="final"><span>TOTAL A COBRAR</span><span id="ticket-grand">L 0.00</span></div></div><div class="ticket-foot">¡Gracias por su compra! · Control del Dueño</div></div>
+
+            <!-- VISTA PREVIA TICKET AJUSTADO AL PAPEL -->
+            <div class="card card-pad ticket-preview">
+              <div class="card-title"><h3>Vista Previa Factura</h3></div>
+              <div class="ticket-paper" id="ticket-printable">
+                <div class="ticket-head">
+                  <strong>STOCKLAB S.A.</strong>
+                  <small>RTK: 08019999999911</small>
+                  <small>Tegucigalpa, Honduras</small>
+                </div>
+                <div class="ticket-meta">
+                  <span id="t-fecha">13/10/2026</span>
+                  <strong id="t-num">FAC-0001</strong>
+                </div>
+                <div class="ticket-items" id="ticket-items-preview">
+                  <span style="color:#777">Sin productos en carrito</span>
+                </div>
+                <div class="ticket-summary">
+                  <div><span>Subtotal:</span><span id="t-sub">L 0.00</span></div>
+                  <div><span>ISV 15%:</span><span id="t-isv">L 0.00</span></div>
+                  <div class="final"><span>TOTAL:</span><span id="t-tot">L 0.00</span></div>
+                </div>
+                <div class="ticket-foot">
+                  ¡GRACIAS POR SU COMPRA!<br>ORIGINAL: CLIENTE
+                </div>
+              </div>
+              <button class="btn btn-ghost" id="print-ticket" style="width:100%; margin-top:15px;">Imprimir Factura</button>
             </div>
           </div>
         </section>
 
+        <!-- VISTA VER TODAS LAS FACTURAS -->
+        <section class="view" id="view-invoices">
+          <h1>Registro de Facturas Emitidas</h1>
+          <p class="lede">Lugar para verificar y auditar todas las facturas generadas por el sistema.</p>
+          <div class="card card-pad" style="margin-top:20px;">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>No. Correlativo</th><th>Fecha</th><th>Total Facturado</th></tr></thead>
+                <tbody id="invoices-table-body"><tr><td colspan="3" style="text-align:center; color:var(--muted)">No hay facturas registradas todavía.</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA VENTAS ANUALES DETALLADAS (MESES, DÍAS, CORRELATIVOS) -->
         <section class="view" id="view-annual">
-          <div class="page-title">
-            <div>
-              <p class="eyebrow">Módulo 03 · reporte financiero</p>
-              <h1>Ventas anuales</h1>
-              <p class="lede">Previsualización del comportamiento, volumen y facturación acumulada durante todo el año en curso.</p>
-            </div>
-            <span class="badge ok">Año 2026 Activo</span>
-          </div>
-          <div class="card card-pad">
-            <div class="card-title">
-              <h3>Comportamiento de ventas por mes</h3>
-              <small>Proyección y registro histórico</small>
-            </div>
-            <p style="color:var(--muted); font-size:12px; margin-bottom:14px;">Resumen estadístico de transacciones, ingresos netos e impuestos recaudados mes a mes.</p>
-            <div class="annual-grid">
-              <div class="month-card"><span>Enero</span><strong>L 34,250.00</strong><small>134 ventas</small></div>
-              <div class="month-card"><span>Febrero</span><strong>L 36,800.00</strong><small>142 ventas</small></div>
-              <div class="month-card"><span>Marzo</span><strong>L 49,400.00</strong><small>188 ventas</small></div>
-              <div class="month-card"><span>Abril</span><strong>L 45,100.00</strong><small>168 ventas</small></div>
-              <div class="month-card"><span>Mayo</span><strong>L 52,300.00</strong><small>216 ventas</small></div>
-              <div class="month-card"><span>Junio</span><strong>L 50,900.00</strong><small>195 ventas</small></div>
-              <div class="month-card"><span>Julio</span><strong>L 48,500.00</strong><small>175 ventas</small></div>
-              <div class="month-card"><span>Agosto</span><strong>L 64,100.00</strong><small>240 ventas</small></div>
-              <div class="month-card"><span>Septiembre</span><strong>L 51,600.00</strong><small>193 ventas</small></div>
-              <div class="month-card"><span>Octubre (Actual)</span><strong>L 42,400.00</strong><small>129 ventas</small></div>
-              <div class="month-card"><span>Noviembre (Proj.)</span><strong>L 48,000.00</strong><small>Estimado</small></div>
-              <div class="month-card"><span>Diciembre (Proj.)</span><strong>L 78,500.00</strong><small>Estimado</small></div>
+          <h1>Ventas Anuales Detalladas</h1>
+          <p class="lede">Desglose analítico por meses, días específicos y correlativos de facturación.</p>
+          <div class="card card-pad" style="margin-top:20px;">
+            <div id="annual-detail-container">
+              <!-- Se rellena dinámicamente -->
             </div>
           </div>
         </section>
-
-        <section class="view" id="view-requirements">
-          <div class="page-title"><div><p class="eyebrow">Módulo 04 · notas del sistema</p><h1>Información de la plataforma</h1><p class="lede">Sistema optimizado para gestión exclusiva del propietario y control absoluto del inventario.</p></div></div>
-          <div class="req-hero"><div><p class="eyebrow">Flujo operativo</p><h2>Del reabastecimiento a la venta.</h2><p>Agrega stock cuando compres mercancía, controla las existencias mediante alertas y factura directamente a tus clientes.</p></div><div class="diagram"><div class="diagram-node">Entrada /<br>Reposición</div><span class="diagram-arrow">→</span><div class="diagram-node">Stock<br>Actualizado</div><span class="diagram-arrow">→</span><div class="diagram-node">Factura<br>Fiscal</div></div></div>
-          <div class="req-grid">
-            <div class="card req-card"><div class="req-number">01</div><div><h3>Catálogo Masivo (+100 ítems)</h3><p>Gran variedad de productos precargados listos para comercializar y gestionar.</p></div></div>
-            <div class="card req-card"><div class="req-number">02</div><div><h3>Reabastecimiento de Stock</h3><p>Registra entradas de mercancía fácilmente para mantener tus productos siempre disponibles.</p></div></div>
-            <div class="card req-card"><div class="req-number">03</div><div><h3>Alertas de Stock Bajo</h3><p>Identifica de inmediato qué productos se están agotando para realizar nuevas compras.</p></div></div>
-            <div class="card req-card"><div class="req-number">04</div><div><h3>Punto de Venta y Facturación</h3><p>Carrito de compras rápido con cálculo automático de totales y comprobante imprimible.</p></div></div>
-            <div class="card req-card"><div class="req-number">05</div><div><h3>Cálculo de ISV (15%)</h3><p>Aplica de forma transparente el impuesto sobre ventas exigido por la ley.</p></div></div>
-            <div class="card req-card"><div class="req-number">06</div><div><h3>Reporte de Ventas Anuales</h3><p>Visualiza el rendimiento financiero desglosado mes a mes durante todo el año.</p></div></div>
-          </div>
-          <div class="card card-pad" style="margin-top:20px"><div class="card-title"><h3>Administración del Propietario</h3><span class="badge ok">Acceso Total</span></div><div class="note"><strong>Plataforma:</strong> StockLab Cloud &nbsp; / &nbsp; <strong>Rol:</strong> Dueño Administrador &nbsp; / &nbsp; <strong>Estado:</strong> Listo para operar</div></div>
-        </section>
-
-        <div class="footer"><span>StockLab · Sistema de Inventario y Ventas</span><span>Panel de control exclusivo para el propietario.</span></div>
       </div>
+
+      <!-- PIE DE PÁGINA CON GRUPO E INTEGRANTES -->
+      <footer class="footer">
+        <div class="footer-brand">StockLab · Sistema de Inventario y Ventas</div>
+        <div class="footer-team">
+          <strong>Grupo 3</strong>: Isabel Fúnez, Aarón Membreño, Valery Brigitte, Alejandra Andrades
+        </div>
+      </footer>
     </main>
   </div>
 
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <div class="modal"><button class="modal-close" id="close-modal" aria-label="Cerrar">×</button><h2 id="modal-title">Nuevo producto</h2><p>Agrega un nuevo producto al catálogo general de tu negocio.</p><form id="product-form"><div class="form-grid"><div class="field full"><label for="new-name">Nombre del producto</label><input id="new-name" required="" placeholder="Ej. Resma de papel bond"></div><div class="field"><label for="new-brand">Marca</label><input id="new-brand" required="" placeholder="Ej. HP, Sony, Scribe"></div><div class="field"><label for="new-category">Categoría</label><input id="new-category" required="" placeholder="Ej. Tecnología, Papelería"></div><div class="field"><label for="new-stock">Stock inicial</label><input id="new-stock" type="number" min="0" value="25" required=""></div><div class="field"><label for="new-min">Stock mínimo</label><input id="new-min" type="number" min="0" value="5" required=""></div><div class="field full"><label for="new-price">Precio unitario (L)</label><input id="new-price" type="number" min="0" step="0.01" value="150.00" required=""></div></div><div class="modal-actions"><button class="btn btn-ghost" type="button" id="cancel-modal">Cancelar</button><button class="btn btn-primary" type="submit">Guardar producto</button></div></form></div>
-  </div>
+  <div class="toast" id="toast"></div>
 
   <script>
     (() => {
       const TAX_RATE = 0.15;
-      
-      const SUPABASE_URL = 'https://prkomkknucjjniewrund.supabase.co';
-      const SUPABASE_ANON_KEY = 'PEGA_AQUÍ_TU_PUBLISHABLE_KEY';
-
-      let dbClient = null;
-      try {
-        if (window.supabase && SUPABASE_URL.startsWith('https://')) {
-          dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        }
-      } catch (e) { console.warn('Supabase no inicializado, usando modo local de respaldo.'); }
+      let currentUserRole = null;
+      let efectivoInicialCaja = 500.00;
 
       const baseProducts = [
-        { name: "Cuaderno espiral 100 hjs", brand: "Scribe", category: "Papelería", stock: 120, min: 20, price: 35.00 },
-        { name: "Cuaderno cosido 200 hjs", brand: "Norma", category: "Papelería", stock: 95, min: 15, price: 65.00 },
-        { name: "Memoria USB 32GB", brand: "Kingston", category: "Tecnología", stock: 45, min: 10, price: 180.00 },
-        { name: "Memoria USB 64GB", brand: "Kingston", category: "Tecnología", stock: 30, min: 8, price: 260.00 },
-        { name: "Mouse óptico USB", brand: "Logitech", category: "Tecnología", stock: 50, min: 12, price: 220.00 },
-        { name: "Mouse inalámbrico", brand: "Logitech", category: "Tecnología", stock: 40, min: 10, price: 320.00 },
-        { name: "Teclado multimedia USB", brand: "Genius", category: "Tecnología", stock: 25, min: 5, price: 280.00 },
-        { name: "Audífonos con micrófono", brand: "Sony", category: 'Tecnología', stock: 35, min: 8, price: 350.00 },
-        { name: "Audífonos Bluetooth TWS", brand: "Xiaomi", category: "Tecnología", stock: 20, min: 5, price: 550.00 },
-        { name: "Marcadores permanentes x4", brand: "Sharpie", category: "Papelería", stock: 60, min: 15, price: 95.00 },
-        { name: "Lápices tinta negra caja x12", brand: "BIC", category: "Papelería", stock: 80, min: 20, price: 65.00 },
-        { name: "Lápices tinta azul caja x12", brand: "BIC", category: "Papelería", stock: 85, min: 20, price: 65.00 },
-        { name: "Borradores de nata caja x20", brand: "Pelikan", category: "Papelería", stock: 40, min: 10, price: 50.00 },
-        { name: "Sacapuntas metálico caja x12", brand: "Staedtler", category: "Papelería", stock: 30, min: 8, price: 75.00 },
-        { name: "Tijeras escolares acero", brand: "Maped", category: "Papelería", stock: 50, min: 12, price: 40.00 },
-        { name: "Pegamento en barra 20g", brand: "Uhu", category: "Papelería", stock: 70, min: 15, price: 32.00 },
-        { name: "Resma papel bond Carta 500h", brand: "Chamex", category: "Papelería", stock: 110, min: 25, price: 125.00 },
-        { name: "Resma papel bond Oficio 500h", brand: "Chamex", category: "Papelería", stock: 75, min: 18, price: 145.00 },
-        { name: "Calculadora científica", brand: "Casio", category: "Tecnología", stock: 28, min: 6, price: 420.00 },
-        { name: "Calculadora de bolsillo 8 dígitos", brand: "Casio", category: "Oficina", stock: 35, min: 10, price: 150.00 },
-        { name: "Grapadora mediana metálica", brand: "Bostitch", category: "Oficina", stock: 22, min: 5, price: 180.00 },
-        { name: "Caja de grapas 26/6 x5000", brand: "Rapid", category: "Oficina", stock: 65, min: 15, price: 55.00 },
-        { name: "Perforadora de papel 2 huecos", brand: "El Casco", category: "Oficina", stock: 18, min: 4, price: 210.00 },
-        { name: "Carpetas colgantes caja x25", brand: "Pendaflex", category: "Oficina", stock: 20, min: 5, price: 290.00 },
-        { name: "Sobres manila tamaño oficio x50", brand: "Mead", category: "Oficina", stock: 40, min: 10, price: 110.00 },
-        { name: "Cinta adhesiva transparente 3M", brand: "Scotch", category: "Oficina", stock: 90, min: 20, price: 38.00 },
-        { name: "Cinta de embalaje marrón", brand: "3M", category: "Oficina", stock: 50, min: 12, price: 48.00 },
-        { name: "Corrector líquido lápiz", brand: "Kores", category: "Papelería", stock: 55, min: 15, price: 35.00 },
-        { name: "Notas adhesivas Post-it x4", brand: "3M", category: "Papelería", stock: 70, min: 18, price: 85.00 },
-        { name: "Carpeta archivador lomo ancho", brand: "Lamy", category: "Oficina", stock: 45, min: 10, price: 65.00 },
-        { name: "Mochila ejecutiva impermeable", brand: "Totto", category: "Accesorios", stock: 15, min: 4, price: 750.00 },
-        { name: "Lonchera térmica escolar", brand: "Totto", category: "Accesorios", stock: 18, min: 5, price: 380.00 },
-        { name: "Estuche portalápices lona", brand: "Quiksilver", category: "Accesorios", stock: 40, min: 10, price: 120.00 },
-        { name: "Botella térmica acero 750ml", brand: "Hydro Flask", category: "Accesorios", stock: 25, min: 6, price: 450.00 },
-        { name: "Tarjetero de aluminio", brand: "Secrid", category: "Accesorios", stock: 20, min: 5, price: 320.00 },
-        { name: "Lampara de escritorio LED", brand: "Taotronics", category: "Tecnología", stock: 22, min: 6, price: 480.00 },
-        { name: "Regleta multicontacto 6 tomas", brand: "APC", category: "Tecnología", stock: 30, min: 8, price: 290.00 },
-        { name: "Cable HDMI 2 metros alta velocidad", brand: "Belkin", category: "Tecnología", stock: 45, min: 10, price: 175.00 },
-        { name: "Cable USB Tipo C a Tipo C 1m", brand: "Anker", category: "Tecnología", stock: 55, min: 12, price: 210.00 },
-        { name: "Cargador de pared USB rápido 20W", brand: "Anker", category: "Tecnología", stock: 35, min: 10, price: 350.00 },
-        { name: "Soporte ajustable para laptop", brand: "Nulea", category: "Tecnología", stock: 18, min: 4, price: 520.00 },
-        { name: "Alfombrilla para mouse ergonómica", brand: "Fellowes", category: "Oficina", stock: 38, min: 10, price: 140.00 },
-        { name: "Disco duro externo 1TB USB 3.0", brand: "Western Digital", category: "Tecnología", stock: 12, min: 3, price: 1450.00 },
-        { name: "Estado Sólido SSD 480GB", brand: "Kingston", category: "Tecnología", stock: 20, min: 5, price: 980.00 },
-        { name: "Tinta para impresora Negra L3210", brand: "Epson", category: "Tecnología", stock: 25, min: 6, price: 310.00 },
-        { name: "Tinta para impresora Cian L3210", brand: "Epson", category: "Tecnología", stock: 22, min: 5, price: 310.00 },
-        { name: "Tinta para impresora Magenta L3210", brand: "Epson", category: "Tecnología", stock: 22, min: 5, price: 310.00 },
-        { name: "Tinta para impresora Amarilla L3210", brand: "Epson", category: "Tecnología", stock: 22, min: 5, price: 310.00 },
-        { name: "Papel fotográfico brillante A4 100h", brand: "HP", category: "Papelería", stock: 30, min: 8, price: 250.00 },
-        { name: "Plumones pastel x12", brand: "Stabilo", category: "Papelería", stock: 40, min: 10, price: 180.00 },
-        { name: "Resaltadores neón x6", brand: "Stabilo", category: "Papelería", stock: 65, min: 15, price: 110.00 },
-        { name: "Compás de precisión escolar", brand: "Maped", category: "Papelería", stock: 35, min: 8, price: 90.00 },
-        { name: "Juego geométrico 30cm", brand: "Artesco", category: "Papelería", stock: 50, min: 12, price: 45.00 },
-        { name: "Cartulina blanca pliego x10", brand: "Canson", category: "Papelería", stock: 80, min: 20, price: 70.00 },
-        { name: "Foami variado colores x10", brand: "Norma", category: "Papelería", stock: 60, min: 15, price: 65.00 },
-        { name: "Silicona caliente barras caja x50", brand: "Pattex", category: "Oficina", stock: 30, min: 8, price: 130.00 },
-        { name: "Pistola aplicadora silicona chica", brand: "Stanley", category: "Oficina", stock: 20, min: 5, price: 160.00 },
-        { name: "Cutter profesional metálico", brand: "Olfa", category: "Oficina", stock: 28, min: 7, price: 95.00 },
-        { name: "Repuestos cuchilla cutter caja x10", brand: "Olfa", category: "Oficina", stock: 35, min: 8, price: 75.00 },
-        { name: "Tarjetero de escritorio rotativo", brand: "Durable", category: "Oficina", stock: 12, min: 3, price: 240.00 },
-        { name: "Organizador de escritorio acrílico", brand: "InterDesign", category: "Oficina", stock: 22, min: 5, price: 310.00 },
-        { name: "Papelera metálica malla negra", brand: "Mind Reader", category: "Oficina", stock: 25, min: 6, price: 190.00 },
-        { name: "Silla ergonómica de oficina", brand: "ErgoComfort", category: "Oficina", stock: 8, min: 2, price: 2800.00 },
-        { name: "Kit de limpieza para pantallas", brand: "CleanScreen", category: "Tecnología", stock: 50, min: 12, price: 85.00 },
-        { name: "Soporte de celular para escritorio", brand: "Ugreen", category: "Tecnología", stock: 40, min: 10, price: 150.00 },
-        { name: "Webcam HD 1080p con micrófono", brand: "Logitech", category: "Tecnología", stock: 15, min: 4, price: 890.00 },
-        { name: "Micrófono USB condensador podcast", brand: "HyperX", category: "Tecnología", stock: 10, min: 3, price: 1650.00 },
-        { name: "Router Wi-Fi Gigabit doble banda", brand: "TP-Link", category: "Tecnología", stock: 14, min: 4, price: 950.00 },
-        { name: "Switch Ethernet 8 puertos 10/100", brand: "TP-Link", category: "Tecnología", stock: 18, min: 5, price: 380.00 },
-        { name: "Cable UTP Cat6 bobina 305m", brand: "Panduit", category: "Tecnología", stock: 6, min: 2, price: 3400.00 },
-        { name: "Conectores RJ45 bolsa x100", brand: "AMP", category: "Tecnología", stock: 25, min: 6, price: 280.00 },
-        { name: "Pinza crimpadora para red RJ45", brand: "Truper", category: "Oficina", stock: 12, min: 3, price: 320.00 },
-        { name: "Tester de cables de red UTP", brand: "Fluke", category: "Tecnología", stock: 10, min: 2, price: 450.00 },
-        { name: "Cinta de aislar eléctrica negra", brand: "3M", category: "Oficina", stock: 60, min: 15, price: 30.00 },
-        { name: "Precinto de seguridad plástico x100", brand: "TydenBrooks", category: "Oficina", stock: 30, min: 8, price: 120.00 },
-        { name: "Etiquetadora manual de precios", brand: "MX-5500", category: "Oficina", stock: 15, min: 4, price: 220.00 },
-        { name: "Rollo de etiquetas para etiquetadora x10", brand: "Open", category: "Oficina", stock: 50, min: 12, price: 90.00 },
-        { name: "Baterías alcalinas AA caja x4", brand: "Duracell", category: "Tecnología", stock: 100, min: 25, price: 85.00 },
-        { name: "Baterías alcalinas AAA caja x4", brand: "Duracell", category: "Tecnología", stock: 90, min: 20, price: 85.00 },
-        { name: "Baterías recargables AA x4 con cargador", brand: "Energizer", category: "Tecnología", stock: 15, min: 4, price: 480.00 },
-        { name: "Linterna LED recargable USB", brand: "Maglite", category: "Accesorios", stock: 20, min: 5, price: 390.00 },
-        { name: "Multiplicador tomacorriente 3 vías", brand: "GE", category: "Tecnología", stock: 40, min: 10, price: 95.00 },
-        { name: "Protector de voltaje para refrigeración", brand: "Sola Basic", category: "Tecnología", stock: 12, min: 3, price: 550.00 },
-        { name: "Abanico de pedestal 3 velocidades", brand: "Lasko", category: "Electrodomésticos", stock: 10, min: 2, price: 1250.00 },
-        { name: "Cafetera de goteo 12 tazas", brand: "Black+Decker", category: "Electrodomésticos", stock: 8, min: 2, price: 890.00 },
-        { name: "Microondas 0.7 pies cúbicos", brand: "Mabe", category: "Electrodomésticos", stock: 5, min: 1, price: 2100.00 },
-        { name: "Dispensador de agua de mesa", brand: "Oster", category: "Electrodomésticos", stock: 6, min: 2, price: 1650.00 },
-        { name: "Gel antibacterial galón 3.78L", brand: "Klin", category: "Limpieza", stock: 25, min: 6, price: 250.00 },
-        { name: "Alcohol amilicado 70% 1 Litro", brand: "Farmaplast", category: "Limpieza", stock: 50, min: 12, price: 65.00 },
-        { name: "Toallas húmedas antibacteriales x80", brand: "Huggies", category: "Limpieza", stock: 40, min: 10, price: 55.00 },
-        { name: "Papel toalla para manos rollo x6", brand: "Scott", category: "Limpieza", stock: 35, min: 8, price: 180.00 },
-        { name: "Jabon líquido de manos 500ml", brand: "Protex", category: "Limpieza", stock: 45, min: 10, price: 75.00 },
-        { name: "Escoba cerdas suaves con palo", brand: "Imusa", category: "Limpieza", stock: 20, min: 5, price: 95.00 },
-        { name: "Trapeador de microfibra", brand: "Rubbermaid", category: "Limpieza", stock: 22, min: 5, price: 130.00 },
-        { name: "Desinfectante multiusos 1 Galón", brand: "Lysol", category: "Limpieza", stock: 28, min: 7, price: 220.00 },
-        { name: "Bolsas para basura grandes rollo x30", brand: "Glad", category: "Limpieza", stock: 60, min: 15, price: 115.00 },
-        { name: "Guantes de nitrilo caja x100", brand: "Ansell", category: "Limpieza", stock: 30, min: 8, price: 280.00 },
-        { name: "Mascarillas quirúrgicas caja x50", brand: "Medicom", category: "Limpieza", stock: 70, min: 18, price: 95.00 },
-        { name: "Bloc de dibujo tamaño carta x50", brand: "Canson", category: "Papelería", stock: 35, min: 8, price: 85.00 },
-        { name: "Pinturas acrílicas set x12 colores", brand: "Pentel", category: "Papelería", stock: 25, min: 6, price: 195.00 },
-        { name: "Pinceles finos set x6", brand: "Winsor & Newton", category: "Papelería", stock: 30, min: 8, price: 110.00 }
+        { id: 1, name: "Cuaderno espiral 100 hjs", brand: "Scribe", category: "Papelería", stock: 120, min: 20, price: 35.00 },
+        { id: 2, name: "Memoria USB 32GB", brand: "Kingston", category: "Tecnología", stock: 45, min: 10, price: 180.00 },
+        { id: 3, name: "Mouse óptico USB", brand: "Logitech", category: "Tecnología", stock: 50, min: 12, price: 220.00 },
+        { id: 4, name: "Resma papel bond Carta", brand: "Chamex", category: "Papelería", stock: 110, min: 25, price: 125.00 },
+        { id: 5, name: "Calculadora científica", brand: "Casio", category: "Tecnología", stock: 28, min: 6, price: 420.00 }
       ];
 
       let state = {
-        products: baseProducts.map((p, index) => ({ id: index + 1, ...p })),
+        products: [...baseProducts],
         movements: [],
-        cart: []
+        cart: [],
+        invoices: []
       };
 
-      let activeView = 'home';
-      let toastTimer;
+      function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg; t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2800);
+      }
 
-      async function initData() {
-        if (dbClient) {
-          try {
-            const { data, error } = await dbClient.from('productos').select('*');
-            if (!error && data && data.length > 0) {
-              state.products = data;
-            }
-            const { data: movData } = await dbClient.from('movements').select('*').order('id', { ascending: false }).limit(10);
-            if (movData) state.movements = movData;
-          } catch (err) {
-            console.error('Error conectando con la API de Supabase:', err);
-          }
+      function money(val) { return 'L ' + Number(val || 0).toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+      // LOGIN LOGIC
+      document.getElementById('login-form').addEventListener('submit', e => {
+        e.preventDefault();
+        currentUserRole = document.getElementById('login-role').value;
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app-shell').classList.add('logged');
+        
+        if (currentUserRole === 'vendedor') {
+          document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+          setView('sales');
+          document.getElementById('user-avatar-initials').textContent = 'V';
+        } else {
+          document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
+          setView('home');
+          document.getElementById('user-avatar-initials').textContent = 'AD';
         }
         renderAll();
+      });
+
+      document.getElementById('logout-btn').addEventListener('click', () => {
+        document.getElementById('app-shell').classList.remove('logged');
+        document.getElementById('login-screen').style.display = 'grid';
+      });
+
+      function setView(v) {
+        document.querySelectorAll('.view').forEach(el => el.classList.toggle('active', el.id === `view-${v}`));
+        document.querySelectorAll('.nav button').forEach(el => el.classList.toggle('active', el.dataset.view === v));
+        const labels = { home:'Resumen General', inventory:'Control de Stock', sales:'Caja y Facturación', invoices:'Registro de Facturas', annual:'Ventas Anuales' };
+        document.getElementById('crumb-label').textContent = labels[v] || '';
       }
 
-      function money(value) { return 'L ' + Number(value || 0).toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-      function whole(value) { return Number(value || 0).toLocaleString('es-HN'); }
-      function product(id) { return state.products.find(p => Number(p.id) === Number(id)); }
-      function lowProducts() { return state.products.filter(p => p.stock <= (p.stock_minimo ?? p.min ?? 5)); }
-      function statusOf(p) { const min = p.stock_minimo ?? p.min ?? 5; return p.stock <= min ? 'low' : p.stock <= min + 3 ? 'warn' : 'ok'; }
-      function statusLabel(status) { return status === 'low' ? 'Agotándose / Bajo' : status === 'warn' ? 'Por revisar' : 'Saludable'; }
-      function stockPercent(p) { const min = p.stock_minimo ?? p.min ?? 5; return Math.min(100, Math.max(4, (p.stock / Math.max(min * 3, 1)) * 100)); }
-      function today() { return new Date().toLocaleDateString('es-HN', { day: '2-digit', month: '2-digit', year: 'numeric' }); }
-      function showToast(message) { const el = document.getElementById('toast'); el.textContent = message; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2800); }
+      document.querySelectorAll('[data-view]').forEach(btn => {
+        btn.addEventListener('click', () => setView(btn.dataset.view));
+      });
 
-      function renderAll() {
-        renderMetrics(); renderHomeTable(); renderAlerts(); renderProductSelects(); renderInventory(); renderMovements(); renderCart(); renderTicket();
-      }
+      // CAJA INICIAL
+      document.getElementById('btn-abrir-caja').addEventListener('click', () => {
+        efectivoInicialCaja = Number(document.getElementById('efectivo-inicial').value) || 0;
+        showToast(`Efectivo inicial configurado en: ${money(efectivoInicialCaja)}`);
+      });
 
-      function renderMetrics() {
-        const units = state.products.reduce((sum, p) => sum + p.stock, 0);
-        const value = state.products.reduce((sum, p) => sum + p.stock * (p.precio ?? p.price ?? 0), 0);
-        const low = lowProducts().length;
-        document.getElementById('hero-products').textContent = whole(state.products.length);
-        document.getElementById('hero-units').textContent = whole(units);
-        document.getElementById('hero-alerts').textContent = whole(low);
-        document.getElementById('metric-value').textContent = money(value);
-        document.getElementById('metric-moves').textContent = whole(state.movements.length);
-        document.getElementById('metric-units').textContent = whole(units);
-        document.getElementById('metric-low').textContent = whole(low);
-        document.getElementById('metric-low').className = 'metric-value' + (low ? ' danger' : '');
-      }
-
-      function productRow(p) {
-        const status = statusOf(p);
-        const minVal = p.stock_minimo ?? p.min ?? 5;
-        const priceVal = p.precio ?? p.price ?? 0;
-        const nameVal = p.nombre ?? p.name ?? '';
-        const brandVal = p.marca ?? p.brand ?? 'Sin marca';
-        const catVal = p.categoria ?? p.category ?? '';
-        return `<tr><td><div class="product-cell"><div><strong>${escapeHtml(nameVal)}</strong></div></div></td><td><strong style="color:var(--ink-2)">${escapeHtml(brandVal)}</strong><small style="display:block;color:var(--muted)">${escapeHtml(catVal)}</small></td><td><span class="stock-number">${whole(p.stock)} <small style="color:var(--muted);font-weight:500">/ ${whole(minVal)} mín.</small></span><div class="stock-track"><span class="${status === 'low' ? 'low' : status === 'warn' ? 'warn' : ''}" style="width:${stockPercent(p)}%"></span></div></td><td><span class="badge ${status}">${statusLabel(status)}</span></td><td>${money(priceVal)}</td></tr>`;
-      }
-
-      function renderHomeTable() {
-        const rows = [...state.products].slice(0, 8).map(p => productRow(p)).join('');
-        document.getElementById('home-table').innerHTML = rows || '<tr><td colspan="5"><div class="empty">No hay productos todavía.</div></td></tr>';
-        document.getElementById('recent-count').textContent = `${state.products.length} productos`;
-      }
-
-      function renderAlerts() {
-        const low = lowProducts();
-        const html = low.length ? low.slice(0, 8).map(p => `<div class="alert-item"><div><strong>${escapeHtml(p.nombre || p.name)} (${escapeHtml(p.marca || p.brand || 'G3')})</strong><small style="display:block">Quedan ${whole(p.stock)} · mínimo ${whole(p.stock_minimo ?? p.min)}</small></div><span class="badge low">Reponer stock</span></div>`).join('') : '<div class="empty">✓ Todo el inventario está abastecido.</div>';
-        document.getElementById('home-alerts').innerHTML = html;
-      }
-
-      function renderProductSelects() {
-        const movement = document.getElementById('movement-product');
-        const sale = document.getElementById('sale-product-select');
-        const options = state.products.map(p => `<option value="${p.id}">${escapeHtml(p.nombre || p.name)} [${escapeHtml(p.marca || p.brand || 'G3')}] · ${whole(p.stock)} disp.</option>`).join('');
-        if (movement) movement.innerHTML = options || '<option value="">No hay productos</option>';
-        if (sale) sale.innerHTML = options || '<option value="">No hay productos</option>';
-      }
-
-      function renderInventory() {
-        const searchEl = document.getElementById('inventory-search');
-        const filterEl = document.getElementById('inventory-filter');
-        const query = searchEl ? searchEl.value.trim().toLowerCase() : '';
-        const filter = filterEl ? filterEl.value : 'all';
+      // ADVERTENCIA AL ACTUALIZAR STOCK
+      document.getElementById('movement-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const prodId = Number(document.getElementById('movement-product').value);
+        const type = document.getElementById('movement-type').value;
+        const qty = Number(document.getElementById('movement-qty').value);
+        const note = document.getElementById('movement-note').value;
         
-        const filtered = state.products.filter(p => {
-          const n = p.nombre || p.name || '';
-          const b = p.marca || p.brand || '';
-          const c = p.categoria || p.category || '';
-          const min = p.stock_minimo ?? p.min ?? 5;
-          const matchText = !query || `${n} ${b} ${c}`.toLowerCase().includes(query);
-          const matchFilter = filter === 'all' || (filter === 'low' ? p.stock <= min : p.stock > min);
-          return matchText && matchFilter;
+        const p = state.products.find(x => x.id === prodId);
+        if (!p) return;
+
+        // Cuadro de advertencia requerido por el profesor
+        const confirmMsg = `¿Está seguro de querer actualizar el stock?\n\nProducto: ${p.name}\nOperación: ${type === 'entry' ? 'Entrada (+)' : 'Salida (-)'}\nCantidad: ${qty} unidades`;
+        if (!window.confirm(confirmMsg)) return;
+
+        if (type === 'entry') p.stock += qty;
+        else {
+          if (p.stock < qty) { showToast('Stock insuficiente para la salida.'); return; }
+          p.stock -= qty;
+        }
+
+        state.movements.unshift({
+          id: Date.now(),
+          prodName: p.name,
+          type,
+          qty,
+          note: note || 'Reabastecimiento',
+          date: new Date().toISOString().split('T')[0]
         });
-        document.getElementById('inventory-table').innerHTML = filtered.length ? filtered.map(p => productRow(p)).join('') : '<tr><td colspan="5"><div class="empty">No se encontraron productos.</div></td></tr>';
-        document.getElementById('inventory-count').textContent = `${filtered.length} de ${state.products.length}`;
-      }
 
-      function renderMovements() {
-        const items = state.movements.slice(0, 8);
-        document.getElementById('movement-count').textContent = `${state.movements.length} registrados`;
-        document.getElementById('movement-list').innerHTML = items.length ? items.map(m => `<div class="mini-list-item"><div class="left"><div class="product-icon" style="background:${m.type === 'entry' ? '#e8faf5' : '#fff0ef'};color:${m.type === 'entry' ? 'var(--teal-dark)' : 'var(--red)'}">${m.type === 'entry' ? '＋' : '−'}</div><div><strong>${escapeHtml(m.name)}</strong><small style="display:block">${escapeHtml(m.note || (m.type === 'entry' ? 'Entrada / Reabastecimiento' : 'Salida de almacén'))}</small></div></div><div style="text-align:right"><strong style="color:${m.type === 'entry' ? 'var(--teal-dark)' : 'var(--red)'}">${m.type === 'entry' ? '+' : '−'}${whole(m.qty)}</strong><small style="display:block">${m.date || today()}</small></div></div>`).join('') : '<div class="empty">Todavía no hay movimientos. Registra entradas de reabastecimiento.</div>';
-      }
+        showToast('¡Stock actualizado con éxito!');
+        e.target.reset();
+        document.getElementById('movement-qty').value = 0;
+        renderAll();
+      });
 
-      function cartTotals() {
-        const subtotal = state.cart.reduce((sum, item) => sum + item.qty * (item.precio ?? item.price ?? 0), 0);
-        return { subtotal, tax: subtotal * TAX_RATE, total: subtotal * (1 + TAX_RATE) };
-      }
+      // CARRITO Y FACTURACIÓN CON CORRELATIVO
+      document.getElementById('add-to-cart').addEventListener('click', () => {
+        const prodId = Number(document.getElementById('sale-product-select').value);
+        const qty = Number(document.getElementById('sale-qty').value);
+        const p = state.products.find(x => x.id === prodId);
+        if (!p || qty <= 0) return;
+
+        if (p.stock < qty) { showToast('No hay suficientes unidades en inventario.'); return; }
+
+        const existing = state.cart.find(item => item.id === prodId);
+        if (existing) {
+          if (p.stock < existing.qty + qty) { showToast('Supera el stock disponible.'); return; }
+          existing.qty += qty;
+        } else {
+          state.cart.push({ id: p.id, name: p.name, price: p.price, qty });
+        }
+        renderCart();
+      });
 
       function renderCart() {
-        const cartBody = document.getElementById('cart-table');
-        if (!state.cart.length) cartBody.innerHTML = '<tr><td colspan="5"><div class="empty">El carrito está vacío. Agrega un producto para comenzar.</div></td></tr>';
-        else cartBody.innerHTML = state.cart.map(item => `<tr><td><strong>${escapeHtml(item.nombre || item.name)}</strong><small style="display:block;color:var(--muted);font-size:10px">${escapeHtml(item.marca || item.brand || '')} · ${escapeHtml(item.categoria || item.category || '')}</small></td><td><div class="qty-control"><button type="button" data-cart-minus="${item.id}">−</button><span>${item.qty}</span><button type="button" data-cart-plus="${item.id}">＋</button></div></td><td>${money(item.precio ?? item.price)}</td><td><strong>${money(item.qty * (item.precio ?? item.price))}</strong></td><td><button class="remove-btn" type="button" data-cart-remove="${item.id}" aria-label="Eliminar">×</button></td></tr>`).join('');
-        const totals = cartTotals();
-        document.getElementById('subtotal').textContent = money(totals.subtotal);
-        document.getElementById('tax').textContent = money(totals.tax);
-        document.getElementById('grand-total').textContent = money(totals.total);
+        const tbody = document.getElementById('cart-table');
+        if (!state.cart.length) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--muted)">Carrito vacío</td></tr>';
+          document.getElementById('cart-subtotal').textContent = money(0);
+          document.getElementById('cart-tax').textContent = money(0);
+          document.getElementById('cart-total').textContent = money(0);
+          document.getElementById('ticket-items-preview').innerHTML = '<span style="color:#777">Sin productos</span>';
+          return;
+        }
+
+        let sub = 0;
+        tbody.innerHTML = state.cart.map((item, idx) => {
+          sub += item.qty * item.price;
+          return `<tr><td>${item.name}</td><td>${item.qty}</td><td>${money(item.price)}</td><td>${money(item.qty * item.price)}</td><td><button class="btn" style="color:var(--red);background:none;padding:0;" onclick="window.removeFromCart(${idx})">×</button></td></tr>`;
+        }).join('');
+
+        const tax = sub * TAX_RATE;
+        const tot = sub + tax;
+
+        document.getElementById('cart-subtotal').textContent = money(sub);
+        document.getElementById('cart-tax').textContent = money(tax);
+        document.getElementById('cart-total').textContent = money(tot);
+
+        // Actualizar vista previa ticket ajustado
+        document.getElementById('ticket-items-preview').innerHTML = state.cart.map(i => `
+          <div class="ticket-item"><span>${i.qty}x ${i.name}</span><strong>${money(i.qty * i.price)}</strong></div>
+        `).join('');
+        document.getElementById('t-sub').textContent = money(sub);
+        document.getElementById('t-isv').textContent = money(tax);
+        document.getElementById('t-tot').textContent = money(tot);
       }
 
-      function renderTicket() {
-        const totals = cartTotals();
-        const items = document.getElementById('ticket-items');
-        document.getElementById('ticket-date').textContent = today();
-        const ticketNo = String(state.movements.filter(m => m.type === 'sale').length + 1).padStart(4, '0');
-        document.getElementById('ticket-number').textContent = ticketNo;
-        document.getElementById('ticket-meta-number').textContent = '#' + ticketNo;
-        items.innerHTML = state.cart.length ? state.cart.map(item => `<div class="ticket-item"><span>${escapeHtml(item.nombre || item.name)} (${escapeHtml(item.marca || item.brand || 'G3')})</span><strong>${money(item.qty * (item.precio ?? item.price))}</strong><small>${item.qty} × ${money(item.precio ?? item.price)}</small></div>`).join('') : '<div class="empty">Agrega productos para ver la factura.</div>';
-        document.getElementById('ticket-subtotal').textContent = money(totals.subtotal);
-        document.getElementById('ticket-tax').textContent = money(totals.tax);
-        document.getElementById('ticket-grand').textContent = money(totals.total);
-      }
+      window.removeFromCart = idx => {
+        state.cart.splice(idx, 1);
+        renderCart();
+      };
 
-      function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[char])); }
+      // CONFIRMAR VENTA E IMPRIMIR
+      document.getElementById('complete-sale').addEventListener('click', () => {
+        if (!state.cart.length) { showToast('El carrito está vacío.'); return; }
 
-      function setView(view) {
-        activeView = view;
-        document.querySelectorAll('.view').forEach(el => el.classList.toggle('active', el.id === `view-${view}`));
-        document.querySelectorAll('.nav button').forEach(el => el.classList.toggle('active', el.dataset.view === view));
-        document.getElementById('crumb-label').textContent = ({ home:'Resumen General', inventory:'Control de stock', sales:'Caja y facturación', annual:'Ventas anuales', requirements:'Notas del sistema' })[view];
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
+        const correlativoNum = state.invoices.length + 1;
+        const correlativoStr = 'FAC-' + String(correlativoNum).padStart(4, '0');
+        const fechaHoy = new Date().toISOString().split('T')[0];
 
-      async function addMovement(productId, type, qty, note, extra = {}) {
-        const p = product(productId); if (!p || qty < 1) return false;
-        if (type === 'exit' && p.stock < qty) { showToast(`No hay suficientes unidades de ${p.nombre || p.name}.`); return false; }
+        let totalVenta = 0;
+        state.cart.forEach(item => {
+          const p = state.products.find(x => x.id === item.id);
+          if (p) p.stock -= item.qty;
+          totalVenta += item.qty * item.price * (1 + TAX_RATE);
+        });
+
+        state.invoices.unshift({
+          correlativo: correlativoStr,
+          date: fechaHoy,
+          total: totalVenta,
+          items: [...state.cart]
+        });
+
+        showToast(`¡Venta procesada! Factura ${correlativoStr} generada.`);
+        state.cart = [];
+        renderAll();
+        window.print();
+      });
+
+      // CIERRE DIARIO
+      document.getElementById('btn-cierre-diario').addEventListener('click', () => {
+        const hoy = new Date().toISOString().split('T')[0];
+        const ventasHoy = state.invoices.filter(inv => inv.date === hoy);
+        const totalVentasHoy = ventasHoy.reduce((sum, i) => sum + i.total, 0);
+        const efectivoFinal = efectivoInicialCaja + totalVentasHoy;
+
+        document.getElementById('cierre-resultado').innerHTML = `
+          Fondo inicial: ${money(efectivoInicialCaja)}<br>
+          Ventas del día: ${money(totalVentasHoy)}<br>
+          <span style="color:var(--teal-dark)">Efectivo total esperado en caja: ${money(efectivoFinal)}</span>
+        `;
+      });
+
+      document.getElementById('print-ticket').addEventListener('click', () => window.print());
+
+      function renderAll() {
+        // Métricas
+        const totalVal = state.products.reduce((s, p) => s + (p.stock * p.price), 0);
+        const totalUnits = state.products.reduce((s, p) => s + p.stock, 0);
+        const lowCount = state.products.filter(p => p.stock <= p.min).length;
         
-        p.stock += type === 'entry' ? qty : -qty;
-        const prodName = p.nombre || p.name;
-        const newMov = { productId: p.id, name: prodName, type, qty, note, date: today(), ...extra };
-        state.movements.unshift({ id: Date.now(), ...newMov });
+        document.getElementById('metric-value').textContent = money(totalVal);
+        document.getElementById('metric-moves').textContent = state.movements.length;
+        document.getElementById('metric-units').textContent = totalUnits;
+        document.getElementById('metric-low').textContent = lowCount;
 
-        if (dbClient) {
-          try {
-            await dbClient.from('productos').update({ stock: p.stock }).eq('id', p.id);
-            await dbClient.from('movements').insert([{ product_id: p.id, type, qty, note: note || (type === 'entry' ? 'Entrada' : 'Salida') }]);
-          } catch (err) {
-            console.error('Error al guardar en la API:', err);
-          }
+        // Selects y tablas
+        const opts = state.products.map(p => `<option value="${p.id}">${p.name} (${p.brand}) - Disp: ${p.stock}</option>`).join('');
+        document.getElementById('movement-product').innerHTML = opts;
+        document.getElementById('sale-product-select').innerHTML = opts;
+
+        document.getElementById('inventory-table').innerHTML = state.products.map(p => `
+          <tr><td><strong>${p.name}</strong></td><td>${p.brand}</td><td><span class="badge ${p.stock <= p.min ? 'low' : 'ok'}">${p.stock}</span></td><td>${money(p.price)}</td></tr>
+        `).join('');
+
+        // Correlativo actual
+        const proxCorr = 'FAC-' + String(state.invoices.length + 1).padStart(4, '0');
+        document.getElementById('current-correlativo').textContent = proxCorr;
+        document.getElementById('t-num').textContent = proxCorr;
+        document.getElementById('t-fecha').textContent = new Date().toLocaleDateString();
+
+        // Tabla Ver Facturas
+        const invBody = document.getElementById('invoices-table-body');
+        if (state.invoices.length) {
+          invBody.innerHTML = state.invoices.map(inv => `
+            <tr><td><strong>${inv.correlativo}</strong></td><td>${inv.date}</td><td>${money(inv.total)}</td></tr>
+          `).join('');
         }
 
-        renderAll(); 
-        return true;
+        // Ventas Anuales detalladas por Mes, Días y Correlativos
+        const annualContainer = document.getElementById('annual-detail-container');
+        if (!state.invoices.length) {
+          annualContainer.innerHTML = '<p style="color:var(--muted)">Aún no hay registros de ventas para mostrar el desglose anual.</p>';
+        } else {
+          annualContainer.innerHTML = state.invoices.map(inv => `
+            <div style="background:#f8fafc; border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:10px;">
+              <strong>Correlativo: ${inv.correlativo}</strong> | Fecha (Día/Mes): ${inv.date} | Total: ${money(inv.total)}
+            </div>
+          `).join('');
+        }
       }
 
-      document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => setView(button.dataset.view)));
-      document.querySelectorAll('[data-go]').forEach(button => button.addEventListener('click', () => setView(button.dataset.go)));
-      
-      document.getElementById('movement-form').addEventListener('submit', async event => {
-        event.preventDefault();
-        const id = document.getElementById('movement-product').value;
-        const type = document.querySelector('input[name="movement-type"]:checked').value;
-        const qty = Number(document.getElementById('movement-qty').value);
-        const note = document.getElementById('movement-note').value.trim();
-        if (await addMovement(id, type, qty, note)) { 
-          event.target.reset(); 
-          showToast(type === 'entry' ? '¡Stock reabastecido correctamente!' : 'Salida registrada correctamente.'); 
-        }
-      });
-
-      document.getElementById('inventory-search').addEventListener('input', renderInventory);
-      document.getElementById('inventory-filter').addEventListener('change', renderInventory);
-
-      document.getElementById('add-to-cart').addEventListener('click', () => {
-        const sel = document.getElementById('sale-product-select');
-        if (!sel || !sel.value) return;
-        const id = Number(sel.value); 
-        const p = product(id); 
-        const qty = Number(document.getElementById('sale-qty').value);
-        if (!p || qty < 1) return;
-        const existing = state.cart.find(item => item.id === id); 
-        const inCart = existing ? existing.qty : 0;
-        if (inCart + qty > p.stock) { showToast(`Solo hay ${p.stock} unidades disponibles en almacén.`); return; }
-        const pName = p.nombre || p.name;
-        const pBrand = p.marca || p.brand;
-        const pCat = p.categoria || p.category;
-        const pPrice = p.precio ?? p.price;
-        if (existing) existing.qty += qty; else state.cart.push({ id: p.id, name: pName, brand: pBrand, category: pCat, price: pPrice, qty });
-        document.getElementById('sale-qty').value = 1; renderCart(); renderTicket(); showToast('Producto agregado a la factura.');
-      });
-
-      document.getElementById('cart-table').addEventListener('click', event => {
-        const minus = event.target.closest('[data-cart-minus]'); const plus = event.target.closest('[data-cart-plus]'); const remove = event.target.closest('[data-cart-remove]');
-        const id = Number((minus || plus || remove)?.dataset[(minus ? 'cartMinus' : plus ? 'cartPlus' : 'cartRemove')]); const item = state.cart.find(i => i.id === id); if (!item) return;
-        if (minus) item.qty--; 
-        if (plus) { const p = product(id); if (item.qty < p.stock) item.qty++; else showToast('La cantidad supera el stock disponible.'); } 
-        if (remove || item.qty < 1) state.cart = state.cart.filter(i => i.id !== id); 
-        renderCart(); renderTicket();
-      });
-
-      document.getElementById('clear-cart').addEventListener('click', () => { state.cart = []; renderCart(); renderTicket(); showToast('Carrito vacío.'); });
-      
-      document.getElementById('complete-sale').addEventListener('click', async () => {
-        if (!state.cart.length) { showToast('Agrega al menos un producto para confirmar la venta.'); return; }
-        const saleItems = [...state.cart];
-        for (const item of saleItems) { 
-          await addMovement(item.id, 'exit', item.qty, 'Venta a cliente', { type: 'sale' }); 
-        }
-        showToast('¡Venta confirmada y stock descontado!');
-        setTimeout(() => { window.print(); state.cart = []; renderAll(); }, 300);
-      });
-
-      document.getElementById('print-ticket').addEventListener('click', () => { window.print(); });
-
-      const modal = document.getElementById('modal-backdrop');
-      function closeModal() { modal.classList.remove('open'); }
-      document.getElementById('open-add-product').addEventListener('click', () => { modal.classList.add('open'); document.getElementById('new-name').focus(); });
-      document.getElementById('close-modal').addEventListener('click', closeModal); 
-      document.getElementById('cancel-modal').addEventListener('click', closeModal);
-      modal.addEventListener('click', event => { if (event.target === modal) closeModal(); });
-
-      document.getElementById('product-form').addEventListener('submit', async event => {
-        event.preventDefault();
-        const nombre = document.getElementById('new-name').value.trim(); 
-        const marca = document.getElementById('new-brand').value.trim(); 
-        const categoria = document.getElementById('new-category').value.trim(); 
-        const stock = Number(document.getElementById('new-stock').value); 
-        const stock_minimo = Number(document.getElementById('new-min').value); 
-        const precio = Number(document.getElementById('new-price').value);
-
-        const newProd = { nombre, marca, categoria, stock, stock_minimo, precio };
-
-        if (dbClient) {
-          try {
-            const { data, error } = await dbClient.from('productos').insert([newProd]).select();
-            if (!error && data) {
-              state.products.push(data[0]);
-            }
-          } catch (err) {
-            console.error('Error al insertar en Supabase:', err);
-            state.products.push({ id: Date.now(), ...newProd });
-          }
-        } else {
-          state.products.push({ id: Date.now(), ...newProd });
-        }
-
-        renderAll(); event.target.reset(); closeModal(); showToast('¡Nuevo producto agregado al catálogo con éxito!');
-      });
-
-      document.addEventListener('keydown', event => { if (event.key === 'Escape') closeModal(); });
-      
-      initData();
+      renderAll();
     })();
   </script>
 </body>
