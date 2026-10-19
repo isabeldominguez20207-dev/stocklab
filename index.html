@@ -128,7 +128,7 @@
     .search-row { display: flex; gap: 9px; margin-bottom: 16px; }
     .search-row input { flex: 1; }
 
-    /* ESTILOS DE FACTURA EN PANTALLA */
+    /* ESTILOS DE FACTURA */
     .ticket-preview { position: sticky; top: 90px; }
     .ticket-paper {
       width: 100%; max-width: 320px; margin: 0 auto; padding: 20px;
@@ -163,25 +163,15 @@
     }
     .toast.show { transform: translateY(0); opacity: 1; }
 
-    /* ESTILOS DE IMPRESIÓN CORREGIDOS (OCUPA TODA LA PÁGINA) */
+    /* ESTILOS DE IMPRESIÓN CORREGIDOS */
     @media print {
       body * { visibility: hidden; }
       #ticket-printable, #ticket-printable * { visibility: visible; }
       #ticket-printable {
-        position: fixed;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        width: 100% !important;
-        max-width: 500px !important;
-        border: none !important;
-        box-shadow: none !important;
-        padding: 20px !important;
-        font-size: 14px !important;
+        position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+        width: 100% !important; max-width: 500px !important; border: none !important;
+        box-shadow: none !important; padding: 20px !important; font-size: 14px !important;
       }
-      .ticket-item { font-size: 13px !important; }
-      .ticket-summary { font-size: 13px !important; }
-      .ticket-summary .final { font-size: 16px !important; }
     }
   </style>
 </head>
@@ -233,8 +223,9 @@
         <button data-view="annual" class="admin-only"><span class="nav-icon">📈</span>Ventas Anuales</button>
       </nav>
       
+      <!-- BOTÓN BLANCO CORREGIDO A "Salida" -->
       <div style="margin-top: auto; padding-top: 15px;">
-        <button class="btn btn-ghost" id="logout-btn" style="width:100%; color:#fff; border-color:rgba(255,255,255,0.2);">Cerrar Sesión</button>
+        <button class="btn btn-ghost" id="logout-btn" style="width:100%; color:#fff; border-color:rgba(255,255,255,0.3); background:transparent;">Salida</button>
       </div>
     </aside>
 
@@ -354,14 +345,15 @@
           </div>
         </section>
 
+        <!-- MÓDULO VER FACTURAS CON VISUALIZACIÓN Y REIMPRESIÓN -->
         <section class="view" id="view-invoices">
           <h1>Registro de Facturas Emitidas</h1>
-          <p class="lede">Auditoría y verificación de todas las facturas generadas.</p>
+          <p class="lede">Auditoría y verificación de todas las facturas generadas. Haz clic en "Ver / Imprimir" para consultar cualquier comprobante.</p>
           <div class="card card-pad" style="margin-top:20px;">
             <div class="table-wrap">
               <table>
-                <thead><tr><th>No. Correlativo</th><th>Fecha</th><th>Total Facturado</th></tr></thead>
-                <tbody id="invoices-table-body"><tr><td colspan="3" style="text-align:center; color:var(--muted)">No hay facturas registradas.</td></tr></tbody>
+                <thead><tr><th>No. Correlativo</th><th>Fecha</th><th>Total Facturado</th><th>Acción</th></tr></thead>
+                <tbody id="invoices-table-body"><tr><td colspan="4" style="text-align:center; color:var(--muted)">No hay facturas registradas.</td></tr></tbody>
               </table>
             </div>
           </div>
@@ -530,8 +522,10 @@
         renderAll();
       });
 
+      // SALIDA DE SESIÓN Y LIMPIEZA DE CONTRASEÑA
       document.getElementById('logout-btn').addEventListener('click', () => {
         document.getElementById('app-shell').classList.remove('logged');
+        document.getElementById('login-pass').value = ''; // Limpia el campo de contraseña
         document.getElementById('login-screen').style.display = 'grid';
       });
 
@@ -667,6 +661,29 @@
         window.print();
       });
 
+      // VER O REIMPRIMIR UNA FACTURA DE HISTORIAL
+      window.viewInvoice = (correlativo) => {
+        const inv = state.invoices.find(i => i.correlativo === correlativo);
+        if (!inv) return;
+
+        document.getElementById('t-num').textContent = inv.correlativo;
+        document.getElementById('t-fecha').textContent = inv.date;
+
+        const sub = inv.total / (1 + TAX_RATE);
+        const tax = inv.total - sub;
+
+        document.getElementById('ticket-items-preview').innerHTML = inv.items.map(i => `
+          <div class="ticket-item"><span>${i.qty}x ${i.name}</span><strong>${money(i.qty * i.price)}</strong></div>
+        `).join('');
+
+        document.getElementById('t-sub').textContent = money(sub);
+        document.getElementById('t-isv').textContent = money(tax);
+        document.getElementById('t-tot').textContent = money(inv.total);
+
+        setView('sales');
+        window.print();
+      };
+
       document.getElementById('btn-cierre-diario').addEventListener('click', () => {
         const hoy = new Date().toISOString().split('T')[0];
         const ventasHoy = state.invoices.filter(inv => inv.date === hoy);
@@ -705,11 +722,19 @@
         document.getElementById('t-num').textContent = proxCorr;
         document.getElementById('t-fecha').textContent = new Date().toLocaleDateString();
 
+        // TABLA VER FACTURAS EMITIDAS CON BOTÓN VER/IMPRIMIR
         const invBody = document.getElementById('invoices-table-body');
         if (state.invoices.length) {
           invBody.innerHTML = state.invoices.map(inv => `
-            <tr><td><strong>${inv.correlativo}</strong></td><td>${inv.date}</td><td>${money(inv.total)}</td></tr>
+            <tr>
+              <td><strong>${inv.correlativo}</strong></td>
+              <td>${inv.date}</td>
+              <td>${money(inv.total)}</td>
+              <td><button class="btn btn-ghost" onclick="window.viewInvoice('${inv.correlativo}')">Ver / Imprimir</button></td>
+            </tr>
           `).join('');
+        } else {
+          invBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--muted)">No hay facturas registradas.</td></tr>';
         }
 
         const annualContainer = document.getElementById('annual-detail-container');
