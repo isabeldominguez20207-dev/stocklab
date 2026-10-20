@@ -176,7 +176,6 @@
     }
     .toast.show { transform: translateY(0); opacity: 1; }
 
-    /* ESTILOS DE IMPRESIÓN */
     @media print {
       body * { visibility: hidden; }
       #ticket-printable, #ticket-printable * { visibility: visible; }
@@ -367,7 +366,7 @@
           </div>
         </section>
 
-        <!-- REGISTRO Y AUDITORÍA DE CIERRES DE CAJA -->
+        <!-- CIERRES DE CAJA -->
         <section class="view" id="view-closures">
           <h1>Historial de Cierres de Caja</h1>
           <p class="lede">Consulta permanente de cada cierre con su día, hora exacta, usuario y monto total vendido.</p>
@@ -443,7 +442,7 @@
         movements: [],
         cart: [],
         invoices: [],
-        closures: [] // Almacenamiento guardado de cada cierre de caja
+        closures: []
       };
 
       function showToast(msg) {
@@ -454,7 +453,6 @@
 
       function money(val) { return 'L ' + Number(val || 0).toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
-      // LOGIN
       document.getElementById('login-form').addEventListener('submit', e => {
         e.preventDefault();
         const selectedRole = document.getElementById('login-role').value;
@@ -482,7 +480,6 @@
         renderAll();
       });
 
-      // SALIDA DE SESIÓN
       document.getElementById('logout-btn').addEventListener('click', () => {
         document.getElementById('app-shell').classList.remove('logged');
         document.getElementById('login-pass').value = '';
@@ -501,14 +498,12 @@
         btn.addEventListener('click', () => setView(btn.dataset.view));
       });
 
-      // REGISTRAR FONDO INICIAL DE CAJA
       document.getElementById('btn-abrir-caja').addEventListener('click', () => {
         efectivoInicialCaja = Number(document.getElementById('efectivo-inicial').value) || 0;
         showToast(`Fondo inicial configurado en: ${money(efectivoInicialCaja)}`);
         actualizarInfoCaja();
       });
 
-      // REALIZAR CIERRE DE CAJA (REINICIA VENTA A 0 Y GUARDA HISTORIAL)
       document.getElementById('btn-cierre-diario').addEventListener('click', () => {
         if (!window.confirm("¿Está seguro de realizar el Cierre de Caja? Esto guardará el reporte, limpiará la caja y la iniciará en L 0.00 para la siguiente persona.")) return;
 
@@ -519,7 +514,6 @@
         const totalEsperado = efectivoInicialCaja + ventasTurnoActual;
         const usuarioNombre = currentUserRole === 'admin' ? 'Administrador' : 'Vendedor';
 
-        // Guardar Cierre en la lista
         const nuevoCierre = {
           id: idCierre,
           fecha: fechaStr,
@@ -530,11 +524,8 @@
           total: totalEsperado
         };
         state.closures.unshift(nuevoCierre);
-
-        // Mostrar Cierre en el visor
         mostrarDetalleCierreEnTicket(nuevoCierre);
 
-        // REINICIAR CAJA A CERO PARA EL SIGUIENTE TURNO
         efectivoInicialCaja = 0.00;
         ventasTurnoActual = 0.00;
         document.getElementById('efectivo-inicial').value = '0.00';
@@ -548,7 +539,40 @@
         document.getElementById('cierre-resultado').textContent = `Fondo Inicial: ${money(efectivoInicialCaja)} | Ventas acumuladas turno actual: ${money(ventasTurnoActual)}`;
       }
 
-      // CARRITO Y VENTAS
+      document.getElementById('movement-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const prodId = Number(document.getElementById('movement-product').value);
+        const type = document.getElementById('movement-type').value;
+        const qty = Number(document.getElementById('movement-qty').value);
+        const note = document.getElementById('movement-note').value;
+        
+        const p = state.products.find(x => x.id === prodId);
+        if (!p) return;
+
+        const confirmMsg = `¿Está seguro de querer actualizar el stock?\n\nProducto: ${p.name}\nOperación: ${type === 'entry' ? 'Entrada (+)' : 'Salida (-)'}\nCantidad: ${qty} unidades`;
+        if (!window.confirm(confirmMsg)) return;
+
+        if (type === 'entry') p.stock += qty;
+        else {
+          if (p.stock < qty) { showToast('Stock insuficiente para la salida.'); return; }
+          p.stock -= qty;
+        }
+
+        state.movements.unshift({
+          id: Date.now(),
+          prodName: p.name,
+          type,
+          qty,
+          note: note || 'Reabastecimiento',
+          date: new Date().toISOString().split('T')[0]
+        });
+
+        showToast('¡Stock actualizado con éxito!');
+        e.target.reset();
+        document.getElementById('movement-qty').value = 0;
+        renderAll();
+      });
+
       document.getElementById('add-to-cart').addEventListener('click', () => {
         const prodId = Number(document.getElementById('sale-product-select').value);
         const qty = Number(document.getElementById('sale-qty').value);
@@ -591,7 +615,6 @@
         document.getElementById('cart-tax').textContent = money(tax);
         document.getElementById('cart-total').textContent = money(tot);
 
-        // Previsualizar Factura
         document.getElementById('ticket-header-title').textContent = 'Factura';
         document.getElementById('ticket-items-preview').innerHTML = state.cart.map(i => `
           <div class="ticket-item"><span>${i.qty}x ${i.name}</span><strong>${money(i.qty * i.price)}</strong></div>
@@ -607,7 +630,6 @@
         renderCart();
       };
 
-      // CONFIRMAR VENTA
       document.getElementById('complete-sale').addEventListener('click', () => {
         if (!state.cart.length) { showToast('El carrito está vacío.'); return; }
 
@@ -622,7 +644,6 @@
           totalVenta += item.qty * item.price * (1 + TAX_RATE);
         });
 
-        // Sumar al total acumulado del turno de caja
         ventasTurnoActual += totalVenta;
         actualizarInfoCaja();
 
@@ -639,7 +660,6 @@
         window.print();
       });
 
-      // IMPRIMIR / MOSTRAR COMPROBANTE DE CIERRE DE CAJA
       function mostrarDetalleCierreEnTicket(cierre) {
         document.getElementById('ticket-header-title').textContent = 'Comprobante de Cierre';
         document.getElementById('t-num').textContent = cierre.id;
@@ -665,7 +685,6 @@
         window.print();
       };
 
-      // VER FACTURA
       window.viewInvoice = (correlativo) => {
         const inv = state.invoices.find(i => i.correlativo === correlativo);
         if (!inv) return;
@@ -703,6 +722,8 @@
         document.getElementById('metric-low').textContent = lowCount;
 
         const opts = state.products.map(p => `<option value="${p.id}">${p.name} (${p.brand}) - Disp: ${p.stock}</option>`).join('');
+        // AQUÍ ESTABA EL CAMBIO: Se cargan ambos selectores correctamente
+        document.getElementById('movement-product').innerHTML = opts;
         document.getElementById('sale-product-select').innerHTML = opts;
 
         document.getElementById('inventory-table').innerHTML = state.products.map(p => `
@@ -712,7 +733,6 @@
         const proxCorr = 'FAC-' + String(state.invoices.length + 1).padStart(4, '0');
         document.getElementById('current-correlativo').textContent = proxCorr;
 
-        // TABLA FACTURAS
         const invBody = document.getElementById('invoices-table-body');
         if (state.invoices.length) {
           invBody.innerHTML = state.invoices.map(inv => `
@@ -727,7 +747,6 @@
           invBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--muted)">No hay facturas registradas.</td></tr>';
         }
 
-        // TABLA HISTORIAL DE CIERRES DE CAJA
         const closuresBody = document.getElementById('closures-table-body');
         if (state.closures.length) {
           closuresBody.innerHTML = state.closures.map(cl => `
