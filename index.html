@@ -101,7 +101,6 @@
     .btn-dark { color: #fff; background: var(--ink); }
     .btn-ghost { color: var(--ink-2); border: 1px solid var(--line); background: #fff; }
     
-    /* BOTÓN BLANCO SALIDA */
     .btn-logout {
       width: 100%;
       background: #ffffff;
@@ -133,20 +132,17 @@
     .badge.ok { color: var(--teal-dark); background: #e4f7f2; }
     .badge.low { color: #ad3d48; background: #ffebed; }
 
-    .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
     .field { display: grid; gap: 7px; }
-    .field.full { grid-column: 1 / -1; }
     label { color: var(--ink-2); font-size: 11px; font-weight: 850; }
     input, select { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; outline: 0; color: var(--ink); background: #fbfcfd; font-size: 12px; }
     input:focus, select:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(22,165,152,.1); }
-    .form-actions { display: flex; gap: 9px; margin-top: 19px; }
 
     .inventory-layout, .sale-layout { display: grid; grid-template-columns: 1fr 1.3fr; gap: 20px; align-items: start; }
     .sale-layout { grid-template-columns: 1.3fr 0.7fr; }
     .search-row { display: flex; gap: 9px; margin-bottom: 16px; }
     .search-row input { flex: 1; }
 
-    /* ESTILOS DE FACTURA */
+    /* ESTILOS DE FACTURA Y REPORTE */
     .ticket-preview { position: sticky; top: 90px; }
     .ticket-paper {
       width: 100%; max-width: 320px; margin: 0 auto; padding: 20px;
@@ -171,7 +167,6 @@
       margin-top: auto; padding: 24px 48px; background: #fff; border-top: 1px solid var(--line);
       display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--muted);
     }
-    .footer-team strong { color: var(--teal-dark); }
 
     .toast {
       position: fixed; z-index: 2000; right: 25px; bottom: 25px; max-width: 300px;
@@ -195,7 +190,7 @@
 </head>
 <body>
 
-  <!-- LOGIN CON CONTRASEÑA VALIDADA (hola / agz) -->
+  <!-- LOGIN -->
   <div id="login-screen">
     <div class="login-card">
       <h2>StockLab Login</h2>
@@ -238,10 +233,10 @@
         <button data-view="inventory" class="admin-only"><span class="nav-icon">▦</span>Control de Stock</button>
         <button data-view="sales" class="active"><span class="nav-icon">▤</span>Caja y Facturación</button>
         <button data-view="invoices" class="admin-only"><span class="nav-icon">📄</span>Ver Facturas</button>
+        <button data-view="closures" class="admin-only"><span class="nav-icon">🔒</span>Historial Cierres</button>
         <button data-view="annual" class="admin-only"><span class="nav-icon">📈</span>Ventas Anuales</button>
       </nav>
       
-      <!-- BOTÓN BLANCO SALIDA -->
       <div style="margin-top: auto; padding-top: 15px;">
         <button class="btn-logout" id="logout-btn">Salida</button>
       </div>
@@ -281,7 +276,7 @@
                 </div>
                 <div class="field" style="margin-top:14px"><label>Cantidad de unidades</label><input id="movement-qty" type="number" min="0" value="0" required></div>
                 <div class="field" style="margin-top:14px"><label>Nota o Proveedor</label><input id="movement-note" type="text" placeholder="Ej. Proveedor distribuidor"></div>
-                <div class="form-actions"><button class="btn btn-primary" type="submit">Actualizar Stock</button></div>
+                <div style="margin-top:19px;"><button class="btn btn-primary" type="submit">Actualizar Stock</button></div>
               </form>
             </div>
             <div class="card card-pad">
@@ -294,17 +289,16 @@
 
         <section class="view active" id="view-sales">
           <h1>Caja y Facturación</h1>
-          <p class="lede">Punto de venta, efectivo inicial, número correlativo y cierre diario.</p>
+          <p class="lede">Punto de venta, efectivo inicial, número correlativo y cierre de turno.</p>
           
-          <!-- SECCIÓN DE CONTROL Y CIERRE DE CAJA (INDEPENDIENTE DE LA FACTURA) -->
           <div class="caja-box">
-            <h4>Control de Caja y Cierre Diario</h4>
+            <h4>Control de Turno de Caja</h4>
             <div style="display:flex; gap:12px; align-items:end; flex-wrap:wrap;">
-              <div class="field" style="flex:1; min-width:200px;"><label>Efectivo inicial en caja (L)</label><input type="number" id="efectivo-inicial" value="500.00" min="0" step="0.01"></div>
-              <button class="btn btn-primary" type="button" id="btn-abrir-caja">Definir Efectivo</button>
-              <button class="btn btn-dark" type="button" id="btn-cierre-diario">Realizar Cierre Diario</button>
+              <div class="field" style="flex:1; min-width:200px;"><label>Fondo Inicial de Turno (L)</label><input type="number" id="efectivo-inicial" value="0.00" min="0" step="0.01"></div>
+              <button class="btn btn-primary" type="button" id="btn-abrir-caja">Establecer Fondo Inicial</button>
+              <button class="btn btn-dark" type="button" id="btn-cierre-diario" style="background:var(--red);">Realizar Cierre de Caja</button>
             </div>
-            <div id="cierre-resultado" style="margin-top:12px; font-size:12px; font-weight:bold;"></div>
+            <div id="cierre-resultado" style="margin-top:12px; font-size:12px; font-weight:bold; color:var(--teal-dark)">Ventas acumuladas en el turno actual: L 0.00</div>
           </div>
 
           <div class="sale-layout" style="margin-top:20px;">
@@ -324,14 +318,14 @@
                 <div style="display:flex; justify-content:space-between; font-size:16px; margin-top:5px;"><span>Total a Pagar:</span><strong id="cart-total" style="color:var(--teal-dark)">L 0.00</strong></div>
               </div>
               
-              <div class="form-actions" style="margin-top:15px;">
+              <div style="margin-top:15px;">
                 <button class="btn btn-primary" id="complete-sale" type="button">Confirmar Venta e Imprimir</button>
               </div>
             </div>
 
             <!-- VISTA PREVIA FACTURA -->
             <div class="card card-pad ticket-preview">
-              <div class="card-title"><h3>Factura</h3></div>
+              <div class="card-title"><h3 id="ticket-header-title">Factura</h3></div>
               <div class="ticket-paper" id="ticket-printable">
                 <div class="ticket-head">
                   <strong>STOCKLAB S.A.</strong>
@@ -339,7 +333,7 @@
                   <small>Tegucigalpa, Honduras</small>
                 </div>
                 <div class="ticket-meta">
-                  <span id="t-fecha">13/10/2026</span>
+                  <span id="t-fecha">20/10/2026</span>
                   <strong id="t-num">FAC-0001</strong>
                 </div>
                 <div class="ticket-items" id="ticket-items-preview">
@@ -350,24 +344,50 @@
                   <div><span>ISV 15%:</span><span id="t-isv">L 0.00</span></div>
                   <div class="final"><span>TOTAL:</span><span id="t-tot">L 0.00</span></div>
                 </div>
-                <div class="ticket-foot">
+                <div class="ticket-foot" id="ticket-footer-text">
                   ¡GRACIAS POR SU COMPRA!<br>ORIGINAL: CLIENTE
                 </div>
               </div>
-              <button class="btn btn-ghost" id="print-ticket" style="width:100%; margin-top:15px;">Imprimir Factura</button>
+              <button class="btn btn-ghost" id="print-ticket" style="width:100%; margin-top:15px;">Imprimir Comprobante</button>
             </div>
           </div>
         </section>
 
-        <!-- MÓDULO VER FACTURAS CON VISUALIZACIÓN Y REIMPRESIÓN -->
+        <!-- VER FACTURAS -->
         <section class="view" id="view-invoices">
           <h1>Registro de Facturas Emitidas</h1>
-          <p class="lede">Auditoría y verificación de todas las facturas generadas. Haz clic en "Ver / Imprimir" para consultar cualquier comprobante.</p>
+          <p class="lede">Auditoría y verificación de todas las facturas generadas.</p>
           <div class="card card-pad" style="margin-top:20px;">
             <div class="table-wrap">
               <table>
                 <thead><tr><th>No. Correlativo</th><th>Fecha</th><th>Total Facturado</th><th>Acción</th></tr></thead>
                 <tbody id="invoices-table-body"><tr><td colspan="4" style="text-align:center; color:var(--muted)">No hay facturas registradas.</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- REGISTRO Y AUDITORÍA DE CIERRES DE CAJA -->
+        <section class="view" id="view-closures">
+          <h1>Historial de Cierres de Caja</h1>
+          <p class="lede">Consulta permanente de cada cierre con su día, hora exacta, usuario y monto total vendido.</p>
+          <div class="card card-pad" style="margin-top:20px;">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>No. Cierre</th>
+                    <th>Fecha y Hora</th>
+                    <th>Cajero / Usuario</th>
+                    <th>Fondo Inicial</th>
+                    <th>Ventas Turno</th>
+                    <th>Total Esperado</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="closures-table-body">
+                  <tr><td colspan="7" style="text-align:center; color:var(--muted)">No hay cierres de caja registrados aún.</td></tr>
+                </tbody>
               </table>
             </div>
           </div>
@@ -397,7 +417,8 @@
     (() => {
       const TAX_RATE = 0.15;
       let currentUserRole = null;
-      let efectivoInicialCaja = 500.00;
+      let efectivoInicialCaja = 0.00;
+      let ventasTurnoActual = 0.00;
 
       const baseProducts = [
         { name: "Cuaderno espiral 100 hjs", brand: "Scribe", category: "Papelería", stock: 120, min: 20, price: 35.00 },
@@ -413,101 +434,16 @@
         { name: "Lápices tinta negra caja x12", brand: "BIC", category: "Papelería", stock: 80, min: 20, price: 65.00 },
         { name: "Lápices tinta azul caja x12", brand: "BIC", category: "Papelería", stock: 85, min: 20, price: 65.00 },
         { name: "Borradores de nata caja x20", brand: "Pelikan", category: "Papelería", stock: 40, min: 10, price: 50.00 },
-        { name: "Sacapuntas metálico caja x12", brand: "Staedtler", category: "Papelería", stock: 30, min: 8, price: 75.00 },
-        { name: "Tijeras escolares acero", brand: "Maped", category: "Papelería", stock: 50, min: 12, price: 40.00 },
-        { name: "Pegamento en barra 20g", brand: "Uhu", category: "Papelería", stock: 70, min: 15, price: 32.00 },
         { name: "Resma papel bond Carta 500h", brand: "Chamex", category: "Papelería", stock: 110, min: 25, price: 125.00 },
-        { name: "Resma papel bond Oficio 500h", brand: "Chamex", category: "Papelería", stock: 75, min: 18, price: 145.00 },
-        { name: "Calculadora científica", brand: "Casio", category: "Tecnología", stock: 28, min: 6, price: 420.00 },
-        { name: "Calculadora de bolsillo 8 dígitos", brand: "Casio", category: "Oficina", stock: 35, min: 10, price: 150.00 },
-        { name: "Grapadora mediana metálica", brand: "Bostitch", category: "Oficina", stock: 22, min: 5, price: 180.00 },
-        { name: "Caja de grapas 26/6 x5000", brand: "Rapid", category: "Oficina", stock: 65, min: 15, price: 55.00 },
-        { name: "Perforadora de papel 2 huecos", brand: "El Casco", category: "Oficina", stock: 18, min: 4, price: 210.00 },
-        { name: "Carpetas colgantes caja x25", brand: "Pendaflex", category: "Oficina", stock: 20, min: 5, price: 290.00 },
-        { name: "Sobres manila tamaño oficio x50", brand: "Mead", category: "Oficina", stock: 40, min: 10, price: 110.00 },
-        { name: "Cinta adhesiva transparente 3M", brand: "Scotch", category: "Oficina", stock: 90, min: 20, price: 38.00 },
-        { name: "Cinta de embalaje marrón", brand: "3M", category: "Oficina", stock: 50, min: 12, price: 48.00 },
-        { name: "Corrector líquido lápiz", brand: "Kores", category: "Papelería", stock: 55, min: 15, price: 35.00 },
-        { name: "Notas adhesivas Post-it x4", brand: "3M", category: "Papelería", stock: 70, min: 18, price: 85.00 },
-        { name: "Carpeta archivador lomo ancho", brand: "Lamy", category: "Oficina", stock: 45, min: 10, price: 65.00 },
-        { name: "Mochila ejecutiva impermeable", brand: "Totto", category: "Accesorios", stock: 15, min: 4, price: 750.00 },
-        { name: "Lonchera térmica escolar", brand: "Totto", category: "Accesorios", stock: 18, min: 5, price: 380.00 },
-        { name: "Estuche portalápices lona", brand: "Quiksilver", category: "Accesorios", stock: 40, min: 10, price: 120.00 },
-        { name: "Botella térmica acero 750ml", brand: "Hydro Flask", category: "Accesorios", stock: 25, min: 6, price: 450.00 },
-        { name: "Tarjetero de aluminio", brand: "Secrid", category: "Accesorios", stock: 20, min: 5, price: 320.00 },
-        { name: "Lampara de escritorio LED", brand: "Taotronics", category: "Tecnología", stock: 22, min: 6, price: 480.00 },
-        { name: "Regleta multicontacto 6 tomas", brand: "APC", category: "Tecnología", stock: 30, min: 8, price: 290.00 },
-        { name: "Cable HDMI 2 metros alta velocidad", brand: "Belkin", category: "Tecnología", stock: 45, min: 10, price: 175.00 },
-        { name: "Cable USB Tipo C a Tipo C 1m", brand: "Anker", category: "Tecnología", stock: 55, min: 12, price: 210.00 },
-        { name: "Cargador de pared USB rápido 20W", brand: "Anker", category: "Tecnología", stock: 35, min: 10, price: 350.00 },
-        { name: "Soporte ajustable para laptop", brand: "Nulea", category: "Tecnología", stock: 18, min: 4, price: 520.00 },
-        { name: "Alfombrilla para mouse ergonómica", brand: "Fellowes", category: "Oficina", stock: 38, min: 10, price: 140.00 },
-        { name: "Disco duro externo 1TB USB 3.0", brand: "Western Digital", category: "Tecnología", stock: 12, min: 3, price: 1450.00 },
-        { name: "Estado Sólido SSD 480GB", brand: "Kingston", category: "Tecnología", stock: 20, min: 5, price: 980.00 },
-        { name: "Tinta para impresora Negra L3210", brand: "Epson", category: "Tecnología", stock: 25, min: 6, price: 310.00 },
-        { name: "Tinta para impresora Cian L3210", brand: "Epson", category: "Tecnología", stock: 22, min: 5, price: 310.00 },
-        { name: "Tinta para impresora Magenta L3210", brand: "Epson", category: "Tecnología", stock: 22, min: 5, price: 310.00 },
-        { name: "Tinta para impresora Amarilla L3210", brand: "Epson", category: "Tecnología", stock: 22, min: 5, price: 310.00 },
-        { name: "Papel fotográfico brillante A4 100h", brand: "HP", category: "Papelería", stock: 30, min: 8, price: 250.00 },
-        { name: "Plumones pastel x12", brand: "Stabilo", category: "Papelería", stock: 40, min: 10, price: 180.00 },
-        { name: "Resaltadores neón x6", brand: "Stabilo", category: "Papelería", stock: 65, min: 15, price: 110.00 },
-        { name: "Compás de precisión escolar", brand: "Maped", category: "Papelería", stock: 35, min: 8, price: 90.00 },
-        { name: "Juego geométrico 30cm", brand: "Artesco", category: "Papelería", stock: 50, min: 12, price: 45.00 },
-        { name: "Cartulina blanca pliego x10", brand: "Canson", category: "Papelería", stock: 80, min: 20, price: 70.00 },
-        { name: "Foami variado colores x10", brand: "Norma", category: "Papelería", stock: 60, min: 15, price: 65.00 },
-        { name: "Silicona caliente barras caja x50", brand: "Pattex", category: "Oficina", stock: 30, min: 8, price: 130.00 },
-        { name: "Pistola aplicadora silicona chica", brand: "Stanley", category: "Oficina", stock: 20, min: 5, price: 160.00 },
-        { name: "Cutter profesional metálico", brand: "Olfa", category: "Oficina", stock: 28, min: 7, price: 95.00 },
-        { name: "Repuestos cuchilla cutter caja x10", brand: "Olfa", category: "Oficina", stock: 35, min: 8, price: 75.00 },
-        { name: "Tarjetero de escritorio rotativo", brand: "Durable", category: "Oficina", stock: 12, min: 3, price: 240.00 },
-        { name: "Organizador de escritorio acrílico", brand: "InterDesign", category: "Oficina", stock: 22, min: 5, price: 310.00 },
-        { name: "Papelera metálica malla negra", brand: "Mind Reader", category: "Oficina", stock: 25, min: 6, price: 190.00 },
-        { name: "Silla ergonómica de oficina", brand: "ErgoComfort", category: "Oficina", stock: 8, min: 2, price: 2800.00 },
-        { name: "Kit de limpieza para pantallas", brand: "CleanScreen", category: "Tecnología", stock: 50, min: 12, price: 85.00 },
-        { name: "Soporte de celular para escritorio", brand: "Ugreen", category: "Tecnología", stock: 40, min: 10, price: 150.00 },
-        { name: "Webcam HD 1080p con micrófono", brand: "Logitech", category: "Tecnología", stock: 15, min: 4, price: 890.00 },
-        { name: "Micrófono USB condensador podcast", brand: "HyperX", category: "Tecnología", stock: 10, min: 3, price: 1650.00 },
-        { name: "Router Wi-Fi Gigabit doble banda", brand: "TP-Link", category: "Tecnología", stock: 14, min: 4, price: 950.00 },
-        { name: "Switch Ethernet 8 puertos 10/100", brand: "TP-Link", category: "Tecnología", stock: 18, min: 5, price: 380.00 },
-        { name: "Cable UTP Cat6 bobina 305m", brand: "Panduit", category: "Tecnología", stock: 6, min: 2, price: 3400.00 },
-        { name: "Conectores RJ45 bolsa x100", brand: "AMP", category: "Tecnología", stock: 25, min: 6, price: 280.00 },
-        { name: "Pinza crimpadora para red RJ45", brand: "Truper", category: "Oficina", stock: 12, min: 3, price: 320.00 },
-        { name: "Tester de cables de red UTP", brand: "Fluke", category: "Tecnología", stock: 10, min: 2, price: 450.00 },
-        { name: "Cinta de aislar eléctrica negra", brand: "3M", category: "Oficina", stock: 60, min: 15, price: 30.00 },
-        { name: "Precinto de seguridad plástico x100", brand: "TydenBrooks", category: "Oficina", stock: 30, min: 8, price: 120.00 },
-        { name: "Etiquetadora manual de precios", brand: "MX-5500", category: "Oficina", stock: 15, min: 4, price: 220.00 },
-        { name: "Rollo de etiquetas para etiquetadora x10", brand: "Open", category: "Oficina", stock: 50, min: 12, price: 90.00 },
-        { name: "Baterías alcalinas AA caja x4", brand: "Duracell", category: "Tecnología", stock: 100, min: 25, price: 85.00 },
-        { name: "Baterías alcalinas AAA caja x4", brand: "Duracell", category: "Tecnología", stock: 90, min: 20, price: 85.00 },
-        { name: "Baterías recargables AA x4 con cargador", brand: "Energizer", category: "Tecnología", stock: 15, min: 4, price: 480.00 },
-        { name: "Linterna LED recargable USB", brand: "Maglite", category: "Accesorios", stock: 20, min: 5, price: 390.00 },
-        { name: "Multiplicador tomacorriente 3 vías", brand: "GE", category: "Tecnología", stock: 40, min: 10, price: 95.00 },
-        { name: "Protector de voltaje para refrigeración", brand: "Sola Basic", category: "Tecnología", stock: 12, min: 3, price: 550.00 },
-        { name: "Abanico de pedestal 3 velocidades", brand: "Lasko", category: "Electrodomésticos", stock: 10, min: 2, price: 1250.00 },
-        { name: "Cafetera de goteo 12 tazas", brand: "Black+Decker", category: "Electrodomésticos", stock: 8, min: 2, price: 890.00 },
-        { name: "Microondas 0.7 pies cúbicos", brand: "Mabe", category: "Electrodomésticos", stock: 5, min: 1, price: 2100.00 },
-        { name: "Dispensador de agua de mesa", brand: "Oster", category: "Electrodomésticos", stock: 6, min: 2, price: 1650.00 },
-        { name: "Gel antibacterial galón 3.78L", brand: "Klin", category: "Limpieza", stock: 25, min: 6, price: 250.00 },
-        { name: "Alcohol amilicado 70% 1 Litro", brand: "Farmaplast", category: "Limpieza", stock: 50, min: 12, price: 65.00 },
-        { name: "Toallas húmedas antibacteriales x80", brand: "Huggies", category: "Limpieza", stock: 40, min: 10, price: 55.00 },
-        { name: "Papel toalla para manos rollo x6", brand: "Scott", category: "Limpieza", stock: 35, min: 8, price: 180.00 },
-        { name: "Jabon líquido de manos 500ml", brand: "Protex", category: "Limpieza", stock: 45, min: 10, price: 75.00 },
-        { name: "Escoba cerdas suaves con palo", brand: "Imusa", category: "Limpieza", stock: 20, min: 5, price: 95.00 },
-        { name: "Trapeador de microfibra", brand: "Rubbermaid", category: "Limpieza", stock: 22, min: 5, price: 130.00 },
-        { name: "Desinfectante multiusos 1 Galón", brand: "Lysol", category: "Limpieza", stock: 28, min: 7, price: 220.00 },
-        { name: "Bolsas para basura grandes rollo x30", brand: "Glad", category: "Limpieza", stock: 60, min: 15, price: 115.00 },
-        { name: "Guantes de nitrilo caja x100", brand: "Ansell", category: "Limpieza", stock: 30, min: 8, price: 280.00 },
-        { name: "Mascarillas quirúrgicas caja x50", brand: "Medicom", category: "Limpieza", stock: 70, min: 18, price: 95.00 },
-        { name: "Bloc de dibujo tamaño carta x50", brand: "Canson", category: "Papelería", stock: 35, min: 8, price: 85.00 },
-        { name: "Pinturas acrílicas set x12 colores", brand: "Pentel", category: "Papelería", stock: 25, min: 6, price: 195.00 },
-        { name: "Pinceles finos set x6", brand: "Winsor & Newton", category: "Papelería", stock: 30, min: 8, price: 110.00 }
+        { name: "Calculadora científica", brand: "Casio", category: "Tecnología", stock: 28, min: 6, price: 420.00 }
       ];
 
       let state = {
         products: baseProducts.map((p, index) => ({ id: index + 1, ...p })),
         movements: [],
         cart: [],
-        invoices: []
+        invoices: [],
+        closures: [] // Almacenamiento guardado de cada cierre de caja
       };
 
       function showToast(msg) {
@@ -518,21 +454,14 @@
 
       function money(val) { return 'L ' + Number(val || 0).toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
-      // INICIO DE SESIÓN CON CONTRASEÑAS ESPECÍFICAS
+      // LOGIN
       document.getElementById('login-form').addEventListener('submit', e => {
         e.preventDefault();
         const selectedRole = document.getElementById('login-role').value;
         const pass = document.getElementById('login-pass').value;
 
-        // Validar contraseñas
-        if (selectedRole === 'admin' && pass !== 'hola') {
-          alert('Contraseña incorrecta para el rol de Administrador.');
-          return;
-        }
-        if (selectedRole === 'vendedor' && pass !== 'agz') {
-          alert('Contraseña incorrecta para el rol de Vendedor.');
-          return;
-        }
+        if (selectedRole === 'admin' && pass !== 'hola') { alert('Contraseña incorrecta para Administrador.'); return; }
+        if (selectedRole === 'vendedor' && pass !== 'agz') { alert('Contraseña incorrecta para Vendedor.'); return; }
 
         currentUserRole = selectedRole;
         document.getElementById('login-screen').style.display = 'none';
@@ -548,13 +477,12 @@
           document.getElementById('user-avatar-initials').textContent = 'AD';
         }
         
-        // Limpiar el campo de contraseña
         document.getElementById('login-form').reset();
         document.getElementById('login-pass').value = '';
         renderAll();
       });
 
-      // BOTÓN DE SALIDA Y BORRADO DE CONTRASEÑA
+      // SALIDA DE SESIÓN
       document.getElementById('logout-btn').addEventListener('click', () => {
         document.getElementById('app-shell').classList.remove('logged');
         document.getElementById('login-pass').value = '';
@@ -565,7 +493,7 @@
       function setView(v) {
         document.querySelectorAll('.view').forEach(el => el.classList.toggle('active', el.id === `view-${v}`));
         document.querySelectorAll('.nav button').forEach(el => el.classList.toggle('active', el.dataset.view === v));
-        const labels = { home:'Resumen General', inventory:'Control de Stock', sales:'Caja y Facturación', invoices:'Registro de Facturas', annual:'Ventas Anuales' };
+        const labels = { home:'Resumen General', inventory:'Control de Stock', sales:'Caja y Facturación', invoices:'Registro de Facturas', closures:'Historial Cierres', annual:'Ventas Anuales' };
         document.getElementById('crumb-label').textContent = labels[v] || '';
       }
 
@@ -573,45 +501,54 @@
         btn.addEventListener('click', () => setView(btn.dataset.view));
       });
 
+      // REGISTRAR FONDO INICIAL DE CAJA
       document.getElementById('btn-abrir-caja').addEventListener('click', () => {
         efectivoInicialCaja = Number(document.getElementById('efectivo-inicial').value) || 0;
-        showToast(`Efectivo inicial configurado en: ${money(efectivoInicialCaja)}`);
+        showToast(`Fondo inicial configurado en: ${money(efectivoInicialCaja)}`);
+        actualizarInfoCaja();
       });
 
-      document.getElementById('movement-form').addEventListener('submit', e => {
-        e.preventDefault();
-        const prodId = Number(document.getElementById('movement-product').value);
-        const type = document.getElementById('movement-type').value;
-        const qty = Number(document.getElementById('movement-qty').value);
-        const note = document.getElementById('movement-note').value;
-        
-        const p = state.products.find(x => x.id === prodId);
-        if (!p) return;
+      // REALIZAR CIERRE DE CAJA (REINICIA VENTA A 0 Y GUARDA HISTORIAL)
+      document.getElementById('btn-cierre-diario').addEventListener('click', () => {
+        if (!window.confirm("¿Está seguro de realizar el Cierre de Caja? Esto guardará el reporte, limpiará la caja y la iniciará en L 0.00 para la siguiente persona.")) return;
 
-        const confirmMsg = `¿Está seguro de querer actualizar el stock?\n\nProducto: ${p.name}\nOperación: ${type === 'entry' ? 'Entrada (+)' : 'Salida (-)'}\nCantidad: ${qty} unidades`;
-        if (!window.confirm(confirmMsg)) return;
+        const ahora = new Date();
+        const fechaStr = ahora.toLocaleDateString('es-HN');
+        const horaStr = ahora.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const idCierre = 'CLR-' + String(state.closures.length + 1).padStart(4, '0');
+        const totalEsperado = efectivoInicialCaja + ventasTurnoActual;
+        const usuarioNombre = currentUserRole === 'admin' ? 'Administrador' : 'Vendedor';
 
-        if (type === 'entry') p.stock += qty;
-        else {
-          if (p.stock < qty) { showToast('Stock insuficiente para la salida.'); return; }
-          p.stock -= qty;
-        }
+        // Guardar Cierre en la lista
+        const nuevoCierre = {
+          id: idCierre,
+          fecha: fechaStr,
+          hora: horaStr,
+          usuario: usuarioNombre,
+          fondoInicial: efectivoInicialCaja,
+          ventas: ventasTurnoActual,
+          total: totalEsperado
+        };
+        state.closures.unshift(nuevoCierre);
 
-        state.movements.unshift({
-          id: Date.now(),
-          prodName: p.name,
-          type,
-          qty,
-          note: note || 'Reabastecimiento',
-          date: new Date().toISOString().split('T')[0]
-        });
+        // Mostrar Cierre en el visor
+        mostrarDetalleCierreEnTicket(nuevoCierre);
 
-        showToast('¡Stock actualizado con éxito!');
-        e.target.reset();
-        document.getElementById('movement-qty').value = 0;
+        // REINICIAR CAJA A CERO PARA EL SIGUIENTE TURNO
+        efectivoInicialCaja = 0.00;
+        ventasTurnoActual = 0.00;
+        document.getElementById('efectivo-inicial').value = '0.00';
+        actualizarInfoCaja();
+
+        showToast(`Cierre ${idCierre} realizado con éxito. Caja iniciada en L 0.00.`);
         renderAll();
       });
 
+      function actualizarInfoCaja() {
+        document.getElementById('cierre-resultado').textContent = `Fondo Inicial: ${money(efectivoInicialCaja)} | Ventas acumuladas turno actual: ${money(ventasTurnoActual)}`;
+      }
+
+      // CARRITO Y VENTAS
       document.getElementById('add-to-cart').addEventListener('click', () => {
         const prodId = Number(document.getElementById('sale-product-select').value);
         const qty = Number(document.getElementById('sale-qty').value);
@@ -654,12 +591,15 @@
         document.getElementById('cart-tax').textContent = money(tax);
         document.getElementById('cart-total').textContent = money(tot);
 
+        // Previsualizar Factura
+        document.getElementById('ticket-header-title').textContent = 'Factura';
         document.getElementById('ticket-items-preview').innerHTML = state.cart.map(i => `
           <div class="ticket-item"><span>${i.qty}x ${i.name}</span><strong>${money(i.qty * i.price)}</strong></div>
         `).join('');
         document.getElementById('t-sub').textContent = money(sub);
         document.getElementById('t-isv').textContent = money(tax);
         document.getElementById('t-tot').textContent = money(tot);
+        document.getElementById('ticket-footer-text').innerHTML = '¡GRACIAS POR SU COMPRA!<br>ORIGINAL: CLIENTE';
       }
 
       window.removeFromCart = idx => {
@@ -667,6 +607,7 @@
         renderCart();
       };
 
+      // CONFIRMAR VENTA
       document.getElementById('complete-sale').addEventListener('click', () => {
         if (!state.cart.length) { showToast('El carrito está vacío.'); return; }
 
@@ -681,6 +622,10 @@
           totalVenta += item.qty * item.price * (1 + TAX_RATE);
         });
 
+        // Sumar al total acumulado del turno de caja
+        ventasTurnoActual += totalVenta;
+        actualizarInfoCaja();
+
         state.invoices.unshift({
           correlativo: correlativoStr,
           date: fechaHoy,
@@ -694,11 +639,38 @@
         window.print();
       });
 
-      // VER O REIMPRIMIR UNA FACTURA
+      // IMPRIMIR / MOSTRAR COMPROBANTE DE CIERRE DE CAJA
+      function mostrarDetalleCierreEnTicket(cierre) {
+        document.getElementById('ticket-header-title').textContent = 'Comprobante de Cierre';
+        document.getElementById('t-num').textContent = cierre.id;
+        document.getElementById('t-fecha').textContent = `${cierre.fecha} ${cierre.hora}`;
+
+        document.getElementById('ticket-items-preview').innerHTML = `
+          <div class="ticket-item"><span>Cajero:</span><strong>${cierre.usuario}</strong></div>
+          <div class="ticket-item"><span>Fondo Inicial:</span><strong>${money(cierre.fondoInicial)}</strong></div>
+          <div class="ticket-item"><span>Ventas Turno:</span><strong>${money(cierre.ventas)}</strong></div>
+        `;
+
+        document.getElementById('t-sub').textContent = money(cierre.fondoInicial);
+        document.getElementById('t-isv').textContent = money(cierre.ventas);
+        document.getElementById('t-tot').textContent = money(cierre.total);
+        document.getElementById('ticket-footer-text').innerHTML = 'CORTE DE CAJA REALIZADO CON ÉXITO<br>SISTEMA STOCKLAB';
+      }
+
+      window.viewClosure = (closureId) => {
+        const cl = state.closures.find(c => c.id === closureId);
+        if (!cl) return;
+        mostrarDetalleCierreEnTicket(cl);
+        setView('sales');
+        window.print();
+      };
+
+      // VER FACTURA
       window.viewInvoice = (correlativo) => {
         const inv = state.invoices.find(i => i.correlativo === correlativo);
         if (!inv) return;
 
+        document.getElementById('ticket-header-title').textContent = 'Factura';
         document.getElementById('t-num').textContent = inv.correlativo;
         document.getElementById('t-fecha').textContent = inv.date;
 
@@ -712,24 +684,11 @@
         document.getElementById('t-sub').textContent = money(sub);
         document.getElementById('t-isv').textContent = money(tax);
         document.getElementById('t-tot').textContent = money(inv.total);
+        document.getElementById('ticket-footer-text').innerHTML = '¡GRACIAS POR SU COMPRA!<br>ORIGINAL: CLIENTE';
 
         setView('sales');
         window.print();
       };
-
-      // REALIZAR CIERRE DIARIO (MOSTRADO ÚNICAMENTE EN LA CAJA SUPERIOR)
-      document.getElementById('btn-cierre-diario').addEventListener('click', () => {
-        const hoy = new Date().toISOString().split('T')[0];
-        const ventasHoy = state.invoices.filter(inv => inv.date === hoy);
-        const totalVentasHoy = ventasHoy.reduce((sum, i) => sum + i.total, 0);
-        const efectivoFinal = efectivoInicialCaja + totalVentasHoy;
-
-        document.getElementById('cierre-resultado').innerHTML = `
-          Fondo inicial: ${money(efectivoInicialCaja)} | 
-          Ventas del día: ${money(totalVentasHoy)} | 
-          <span style="color:var(--teal-dark)">Efectivo total esperado en caja: ${money(efectivoFinal)}</span>
-        `;
-      });
 
       document.getElementById('print-ticket').addEventListener('click', () => window.print());
 
@@ -744,7 +703,6 @@
         document.getElementById('metric-low').textContent = lowCount;
 
         const opts = state.products.map(p => `<option value="${p.id}">${p.name} (${p.brand}) - Disp: ${p.stock}</option>`).join('');
-        document.getElementById('movement-product').innerHTML = opts;
         document.getElementById('sale-product-select').innerHTML = opts;
 
         document.getElementById('inventory-table').innerHTML = state.products.map(p => `
@@ -753,9 +711,8 @@
 
         const proxCorr = 'FAC-' + String(state.invoices.length + 1).padStart(4, '0');
         document.getElementById('current-correlativo').textContent = proxCorr;
-        document.getElementById('t-num').textContent = proxCorr;
-        document.getElementById('t-fecha').textContent = new Date().toLocaleDateString();
 
+        // TABLA FACTURAS
         const invBody = document.getElementById('invoices-table-body');
         if (state.invoices.length) {
           invBody.innerHTML = state.invoices.map(inv => `
@@ -770,15 +727,22 @@
           invBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--muted)">No hay facturas registradas.</td></tr>';
         }
 
-        const annualContainer = document.getElementById('annual-detail-container');
-        if (!state.invoices.length) {
-          annualContainer.innerHTML = '<p style="color:var(--muted)">Aún no hay registros de ventas para mostrar el desglose anual.</p>';
-        } else {
-          annualContainer.innerHTML = state.invoices.map(inv => `
-            <div style="background:#f8fafc; border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:10px;">
-              <strong>Correlativo: ${inv.correlativo}</strong> | Fecha (Día/Mes): ${inv.date} | Total: ${money(inv.total)}
-            </div>
+        // TABLA HISTORIAL DE CIERRES DE CAJA
+        const closuresBody = document.getElementById('closures-table-body');
+        if (state.closures.length) {
+          closuresBody.innerHTML = state.closures.map(cl => `
+            <tr>
+              <td><strong>${cl.id}</strong></td>
+              <td>${cl.fecha} - ${cl.hora}</td>
+              <td>${cl.usuario}</td>
+              <td>${money(cl.fondoInicial)}</td>
+              <td><strong style="color:var(--teal-dark)">${money(cl.ventas)}</strong></td>
+              <td><strong>${money(cl.total)}</strong></td>
+              <td><button class="btn btn-ghost" onclick="window.viewClosure('${cl.id}')">Ver Cierre</button></td>
+            </tr>
           `).join('');
+        } else {
+          closuresBody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--muted)">No hay cierres de caja registrados aún.</td></tr>';
         }
       }
 
