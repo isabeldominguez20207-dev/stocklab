@@ -195,7 +195,7 @@
 </head>
 <body>
 
-  <!-- LOGIN CON AUTOCOMPLETE DESACTIVADO -->
+  <!-- LOGIN CON CONTRASEÑA VALIDADA (hola / agz) -->
   <div id="login-screen">
     <div class="login-card">
       <h2>StockLab Login</h2>
@@ -296,12 +296,15 @@
           <h1>Caja y Facturación</h1>
           <p class="lede">Punto de venta, efectivo inicial, número correlativo y cierre diario.</p>
           
+          <!-- SECCIÓN DE CONTROL Y CIERRE DE CAJA (INDEPENDIENTE DE LA FACTURA) -->
           <div class="caja-box">
-            <h4>Control de Caja</h4>
-            <div style="display:flex; gap:12px; align-items:end;">
-              <div class="field" style="flex:1;"><label>Efectivo inicial en caja (L)</label><input type="number" id="efectivo-inicial" value="500.00" min="0" step="0.01"></div>
+            <h4>Control de Caja y Cierre Diario</h4>
+            <div style="display:flex; gap:12px; align-items:end; flex-wrap:wrap;">
+              <div class="field" style="flex:1; min-width:200px;"><label>Efectivo inicial en caja (L)</label><input type="number" id="efectivo-inicial" value="500.00" min="0" step="0.01"></div>
               <button class="btn btn-primary" type="button" id="btn-abrir-caja">Definir Efectivo</button>
+              <button class="btn btn-dark" type="button" id="btn-cierre-diario">Realizar Cierre Diario</button>
             </div>
+            <div id="cierre-resultado" style="margin-top:12px; font-size:12px; font-weight:bold;"></div>
           </div>
 
           <div class="sale-layout" style="margin-top:20px;">
@@ -323,13 +326,6 @@
               
               <div class="form-actions" style="margin-top:15px;">
                 <button class="btn btn-primary" id="complete-sale" type="button">Confirmar Venta e Imprimir</button>
-              </div>
-
-              <div style="margin-top:30px; border-top:2px dashed var(--line); padding-top:15px;">
-                <h4>Cierre Diario de Caja</h4>
-                <p style="font-size:11px; color:var(--muted);">Calcula el efectivo total sumando el fondo inicial y las ventas.</p>
-                <button class="btn btn-dark" type="button" id="btn-cierre-diario">Realizar Cierre Diario</button>
-                <div id="cierre-resultado" style="margin-top:10px; font-size:12px; font-weight:bold;"></div>
               </div>
             </div>
 
@@ -522,9 +518,23 @@
 
       function money(val) { return 'L ' + Number(val || 0).toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
+      // INICIO DE SESIÓN CON CONTRASEÑAS ESPECÍFICAS
       document.getElementById('login-form').addEventListener('submit', e => {
         e.preventDefault();
-        currentUserRole = document.getElementById('login-role').value;
+        const selectedRole = document.getElementById('login-role').value;
+        const pass = document.getElementById('login-pass').value;
+
+        // Validar contraseñas
+        if (selectedRole === 'admin' && pass !== 'hola') {
+          alert('Contraseña incorrecta para el rol de Administrador.');
+          return;
+        }
+        if (selectedRole === 'vendedor' && pass !== 'agz') {
+          alert('Contraseña incorrecta para el rol de Vendedor.');
+          return;
+        }
+
+        currentUserRole = selectedRole;
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('app-shell').classList.add('logged');
         
@@ -538,21 +548,17 @@
           document.getElementById('user-avatar-initials').textContent = 'AD';
         }
         
-        // Limpia el formulario al entrar
+        // Limpiar el campo de contraseña
         document.getElementById('login-form').reset();
         document.getElementById('login-pass').value = '';
         renderAll();
       });
 
-      // BOTÓN DE SALIDA Y BORRADO PERMANENTE DE CONTRASEÑA
+      // BOTÓN DE SALIDA Y BORRADO DE CONTRASEÑA
       document.getElementById('logout-btn').addEventListener('click', () => {
         document.getElementById('app-shell').classList.remove('logged');
-        
-        // Limpia explícitamente el campo de contraseña y reinicia el formulario
-        const passInput = document.getElementById('login-pass');
-        passInput.value = '';
+        document.getElementById('login-pass').value = '';
         document.getElementById('login-form').reset();
-        
         document.getElementById('login-screen').style.display = 'grid';
       });
 
@@ -688,7 +694,7 @@
         window.print();
       });
 
-      // VER O REIMPRIMIR UNA FACTURA DE HISTORIAL
+      // VER O REIMPRIMIR UNA FACTURA
       window.viewInvoice = (correlativo) => {
         const inv = state.invoices.find(i => i.correlativo === correlativo);
         if (!inv) return;
@@ -711,6 +717,7 @@
         window.print();
       };
 
+      // REALIZAR CIERRE DIARIO (MOSTRADO ÚNICAMENTE EN LA CAJA SUPERIOR)
       document.getElementById('btn-cierre-diario').addEventListener('click', () => {
         const hoy = new Date().toISOString().split('T')[0];
         const ventasHoy = state.invoices.filter(inv => inv.date === hoy);
@@ -718,8 +725,8 @@
         const efectivoFinal = efectivoInicialCaja + totalVentasHoy;
 
         document.getElementById('cierre-resultado').innerHTML = `
-          Fondo inicial: ${money(efectivoInicialCaja)}<br>
-          Ventas del día: ${money(totalVentasHoy)}<br>
+          Fondo inicial: ${money(efectivoInicialCaja)} | 
+          Ventas del día: ${money(totalVentasHoy)} | 
           <span style="color:var(--teal-dark)">Efectivo total esperado en caja: ${money(efectivoFinal)}</span>
         `;
       });
@@ -749,7 +756,6 @@
         document.getElementById('t-num').textContent = proxCorr;
         document.getElementById('t-fecha').textContent = new Date().toLocaleDateString();
 
-        // TABLA VER FACTURAS EMITIDAS CON BOTÓN VER/IMPRIMIR
         const invBody = document.getElementById('invoices-table-body');
         if (state.invoices.length) {
           invBody.innerHTML = state.invoices.map(inv => `
